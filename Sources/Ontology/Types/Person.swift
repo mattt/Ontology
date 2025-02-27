@@ -142,19 +142,46 @@ public struct Person {
             for relation in contact.contactRelations {
                 let person = Person(name: relation.value.name)
 
+                outer: if #available(macOS 15.0, iOS 13.0, tvOS 13.0, watchOS 6.0, *) {
+                    switch relation.label {
+                    case CNLabelContactRelationFemalePartner,
+                        CNLabelContactRelationHusband,
+                        CNLabelContactRelationMalePartner,
+                        CNLabelContactRelationPartner,
+                        CNLabelContactRelationWife:
+                        spouses.append(person)
+                    case CNLabelContactRelationElderBrother,
+                        CNLabelContactRelationElderSibling,
+                        CNLabelContactRelationElderSister,
+                        CNLabelContactRelationEldestBrother,
+                        CNLabelContactRelationEldestSister,
+                        CNLabelContactRelationYoungerBrother,
+                        CNLabelContactRelationYoungerSibling,
+                        CNLabelContactRelationYoungerSibling,
+                        CNLabelContactRelationYoungerSister,
+                        CNLabelContactRelationYoungestBrother,
+                        CNLabelContactRelationYoungestSister,
+                        CNLabelContactRelationSibling:
+                        siblings.append(person)
+                    default:
+                        break outer
+                    }
+
+                    continue
+                }
+
                 switch relation.label {
                 case CNLabelContactRelationSpouse:
                     spouses.append(person)
-                // #if available(macOS 15.0, *)
-                // case CNLabelContactRelationSibling:
-                //     siblings.append(person)
-                // #endif
-                case CNLabelContactRelationBrother, CNLabelContactRelationSister:
+                case CNLabelContactRelationBrother,
+                    CNLabelContactRelationSister:
                     siblings.append(person)
-                case CNLabelContactRelationChild, CNLabelContactRelationSon,
+                case CNLabelContactRelationChild,
+                    CNLabelContactRelationSon,
                     CNLabelContactRelationDaughter:
                     children.append(person)
-                case CNLabelContactRelationParent, CNLabelContactRelationMother,
+                case CNLabelContactRelationParent,
+                    CNLabelContactRelationMother,
                     CNLabelContactRelationFather:
                     parents.append(person)
                 default:
