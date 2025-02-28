@@ -99,38 +99,7 @@ contact.emailAddresses = [
 ]
 
 // Convert to Schema.org Person
-let person = Person(from: contact)
-```
-
-### Working with tasks and reminders
-
-```swift
-import Ontology
-import EventKit
-
-// Create a PlanAction directly
-let task = PlanAction(
-    name: "Complete project proposal",
-    dueDate: Date().addingTimeInterval(86400), // Due tomorrow
-    description: "Finish the draft and send to the team for review",
-    completed: false
-)
-
-// Convert from Apple's EKReminder to Schema.org PlanAction
-let eventStore = EKEventStore()
-// Request access to reminders first
-let reminder = EKReminder(eventStore: eventStore)
-reminder.title = "Buy groceries"
-reminder.notes = "Milk, eggs, bread"
-reminder.priority = 1
-reminder.dueDateComponents = Calendar.current.dateComponents(
-    [.year, .month, .day, .hour, .minute], 
-    from: Date().addingTimeInterval(3600)
-)
-reminder.isCompleted = false
-
-// Convert to Schema.org PlanAction
-let planAction = PlanAction(reminder: reminder)
+let person = Person(contact)
 ```
 
 ## License

@@ -21,7 +21,7 @@ public struct PostalAddress: Hashable, Sendable {
 
     extension PostalAddress {
         /// Initialize a PostalAddress from a CNPostalAddress
-        public init(from address: CNPostalAddress) {
+        public init(_ address: CNPostalAddress) {
             streetAddress = address.street.isEmpty ? nil : address.street
             addressLocality = address.city.isEmpty ? nil : address.city
             addressRegion = address.state.isEmpty ? nil : address.state

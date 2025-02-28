@@ -71,7 +71,7 @@ public struct Person {
     extension Person {
 
         /// Initialize a Person from a CNContact
-        public init?(from contact: CNContact) {
+        public init?(_ contact: CNContact) {
             guard contact.contactType == .person else { return nil }
 
             identifier = contact.identifier
@@ -86,7 +86,7 @@ public struct Person {
 
             // Convert postal addresses
             if !contact.postalAddresses.isEmpty {
-                address = contact.postalAddresses.map { PostalAddress(from: $0.value) }
+                address = contact.postalAddresses.map { PostalAddress($0.value) }
             } else {
                 address = nil
             }
@@ -127,7 +127,7 @@ public struct Person {
 
             // Instant messaging
             if !contact.instantMessageAddresses.isEmpty {
-                contactPoint = contact.instantMessageAddresses.map { ContactPoint(from: $0.value) }
+                contactPoint = contact.instantMessageAddresses.map { ContactPoint($0.value) }
             } else {
                 contactPoint = nil
             }
