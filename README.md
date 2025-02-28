@@ -38,6 +38,7 @@ Supported Schema.org types and their Apple framework equivalents:
 | [Event](https://schema.org/Event) | [EKEvent](https://developer.apple.com/documentation/eventkit/ekevent) | Represents an event with start/end dates, location, etc. |
 | [Organization](https://schema.org/Organization) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents an organization with properties like name and contact info |
 | [Person](https://schema.org/Person) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents a person with properties like name, contact info, and relationships |
+| [PlanAction](https://schema.org/PlanAction) | [EKReminder](https://developer.apple.com/documentation/eventkit/ekreminder) | Represents a planned action or task with properties like name, description, due date, and completion status |
 | [PostalAddress](https://schema.org/PostalAddress) | [CNPostalAddress](https://developer.apple.com/documentation/contacts/cnpostaladdress) | Represents a physical address with street, city, region, etc. |
 
 ### Weather.gov API Vocabulary
@@ -99,6 +100,37 @@ contact.emailAddresses = [
 
 // Convert to Schema.org Person
 let person = Person(from: contact)
+```
+
+### Working with tasks and reminders
+
+```swift
+import Ontology
+import EventKit
+
+// Create a PlanAction directly
+let task = PlanAction(
+    name: "Complete project proposal",
+    dueDate: Date().addingTimeInterval(86400), // Due tomorrow
+    description: "Finish the draft and send to the team for review",
+    completed: false
+)
+
+// Convert from Apple's EKReminder to Schema.org PlanAction
+let eventStore = EKEventStore()
+// Request access to reminders first
+let reminder = EKReminder(eventStore: eventStore)
+reminder.title = "Buy groceries"
+reminder.notes = "Milk, eggs, bread"
+reminder.priority = 1
+reminder.dueDateComponents = Calendar.current.dateComponents(
+    [.year, .month, .day, .hour, .minute], 
+    from: Date().addingTimeInterval(3600)
+)
+reminder.isCompleted = false
+
+// Convert to Schema.org PlanAction
+let planAction = PlanAction(reminder: reminder)
 ```
 
 ## License
