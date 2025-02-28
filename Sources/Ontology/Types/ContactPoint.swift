@@ -12,7 +12,7 @@ public struct ContactPoint: Hashable, Sendable {
 
     extension ContactPoint {
         /// Initialize a ContactPoint from a CNInstantMessageAddress
-        public init(from im: CNInstantMessageAddress) {
+        public init(_ im: CNInstantMessageAddress) {
             contactType = im.service
             identifier = im.username
         }

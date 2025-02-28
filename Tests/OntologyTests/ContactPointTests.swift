@@ -71,7 +71,7 @@ struct ContactPointTests {
         @Test("CNInstantMessageAddress initialization works correctly")
         func testCNInstantMessageAddressInitialization() throws {
             let imAddress = CNInstantMessageAddress(username: "johndoe", service: "skype")
-            let contactPoint = ContactPoint(from: imAddress)
+            let contactPoint = ContactPoint(imAddress)
 
             #expect(contactPoint.contactType == "skype")
             #expect(contactPoint.identifier == "johndoe")

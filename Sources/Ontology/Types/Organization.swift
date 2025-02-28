@@ -29,7 +29,7 @@ public struct Organization: Hashable, Sendable {
 
     extension Organization {
         /// Initialize an Organization from a CNContact
-        public init?(from contact: CNContact) {
+        public init?(_ contact: CNContact) {
             guard contact.contactType == .organization else { return nil }
 
             name = contact.organizationName
@@ -43,7 +43,7 @@ public struct Organization: Hashable, Sendable {
 
             // Convert postal addresses
             if !contact.postalAddresses.isEmpty {
-                address = contact.postalAddresses.map { PostalAddress(from: $0.value) }
+                address = contact.postalAddresses.map { PostalAddress($0.value) }
             } else {
                 address = nil
             }

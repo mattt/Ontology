@@ -42,7 +42,7 @@ public struct Event: Hashable, Sendable {
 
     extension Event {
         /// Initialize an Event with an EventKit event
-        public init(event: EKEvent) {
+        public init(_ event: EKEvent) {
             self.name = event.title
             self.startDate = DateTime(event.startDate)
             self.endDate = DateTime(event.endDate)
