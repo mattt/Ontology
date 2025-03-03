@@ -36,6 +36,7 @@ Supported Schema.org types and their Apple framework equivalents:
 | [ContactPoint](https://schema.org/ContactPoint) | [CNInstantMessageAddress](https://developer.apple.com/documentation/contacts/cninstantmessageaddress) | Represents a method of contact like instant messaging |
 | [DateTime](https://schema.org/DateTime) | [Date](https://developer.apple.com/documentation/foundation/date) | Represents a date and time with ISO 8601 formatting |
 | [Event](https://schema.org/Event) | [EKEvent](https://developer.apple.com/documentation/eventkit/ekevent) | Represents an event with start/end dates, location, etc. |
+| [GeoCoordinates](https://schema.org/GeoCoordinates) | [CLLocation](https://developer.apple.com/documentation/corelocation/cllocation) | Represents geographic coordinates with latitude, longitude, and optional elevation |
 | [Organization](https://schema.org/Organization) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents an organization with properties like name and contact info |
 | [Person](https://schema.org/Person) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents a person with properties like name, contact info, and relationships |
 | [PlanAction](https://schema.org/PlanAction) | [EKReminder](https://developer.apple.com/documentation/eventkit/ekreminder) | Represents a planned action or task with properties like name, description, due date, and completion status |
