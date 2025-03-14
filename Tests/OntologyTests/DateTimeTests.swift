@@ -60,7 +60,7 @@ struct DateTimeTests {
         let date = Date(timeIntervalSince1970: 0)  // 1970-01-01T00:00:00Z
 
         // Test UTC
-        let utcDateTime = DateTime(date, timeZone: TimeZone(secondsFromGMT: 0))
+        let utcDateTime = DateTime(date, timeZone: .gmt)
         let utcEncoded = try JSONEncoder().encode(utcDateTime)
         let utcString = String(data: utcEncoded, encoding: .utf8)!
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))

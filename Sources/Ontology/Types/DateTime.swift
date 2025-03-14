@@ -59,7 +59,7 @@ extension DateTime: Codable {
         if let timeZone = timeZone {
             formatter.timeZone = timeZone
         } else {
-            formatter.timeZone = TimeZone(secondsFromGMT: 0)  // Default to UTC
+            formatter.timeZone = .gmt
         }
         let string = formatter.string(from: value)
 
