@@ -108,14 +108,17 @@ extension WeatherConditions: Codable {
 
         // Decode properties
         temperature = try container.decode(
-            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.temperature)).wrappedValue
+            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.temperature)
+        ).wrappedValue
         apparentTemperature = try container.decode(
-            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.apparentTemperature)).wrappedValue
+            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.apparentTemperature)
+        ).wrappedValue
         humidity =
             try container.decode(QuantitativeValue.self, forKey: .attribute(.humidity)).value
             / 100.0
         windSpeed = try container.decode(
-            QuantitativeValueCoded<UnitSpeed>.self, forKey: .attribute(.windSpeed)).wrappedValue
+            QuantitativeValueCoded<UnitSpeed>.self, forKey: .attribute(.windSpeed)
+        ).wrappedValue
         condition = try container.decode(String.self, forKey: .attribute(.condition))
         if let precipitationChance = try container.decodeIfPresent(
             QuantitativeValue.self, forKey: .attribute(.precipitationChance))
