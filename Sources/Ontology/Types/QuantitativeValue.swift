@@ -33,12 +33,32 @@ extension QuantitativeValue: Codable {
         // Encode @context if we're at the root level
         if encoder.codingPath.isEmpty {
             try container.encode(schema.org, forKey: .context)
-            try container.encode("QuantitativeValue", forKey: .type)
         }
+        try container.encode("QuantitativeValue", forKey: .type)
 
         try container.encode(value, forKey: .attribute(.value))
         try container.encode(unitCode, forKey: .attribute(.unitCode))
         try container.encodeIfPresent(unitText, forKey: .attribute(.unitText))
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
+
+        // Verify type is correct
+        let describedType = String(describing: Self.self)
+        let decodedType = try container.decode(String.self, forKey: .type)
+        guard decodedType == describedType else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .type,
+                in: container,
+                debugDescription: "Expected type to be '\(describedType)', but found \(decodedType)"
+            )
+        }
+
+        // Decode properties
+        value = try container.decode(Double.self, forKey: .attribute(.value))
+        unitCode = try container.decode(String.self, forKey: .attribute(.unitCode))
+        unitText = try container.decodeIfPresent(String.self, forKey: .attribute(.unitText))
     }
 }
 
