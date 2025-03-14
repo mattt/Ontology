@@ -46,14 +46,39 @@ extension QuantitativeValue: Codable {
 extension QuantitativeValue {
     /// Initialize from a Foundation.Measurement
     public init<UnitType: Unit>(_ measurement: Measurement<UnitType>) where UnitType: Dimension {
-        // Convert to base unit for consistent serialization
-        let baseValue = measurement.converted(to: UnitType.baseUnit()).value
+        let baseUnit: UnitType
+        let (unitCode, unitText) = Self.unCefactCode(for: UnitType.self)
 
-        // Map unit type to UN/CEFACT code
-        let (unitCode, unitText) = Self.unCefactCode(for: measurement.unit)
+        switch UnitType.self {
+        case is UnitTemperature.Type:
+            // Special handling for temperature - keep in Celsius
+            let celsiusValue = measurement.converted(to: UnitTemperature.celsius as! UnitType)
+            self.init(
+                value: celsiusValue.value,
+                unitCode: unitCode,
+                unitText: unitText
+            )
+            return
 
+        case is UnitSpeed.Type:
+            baseUnit = UnitSpeed.kilometersPerHour as! UnitType
+        case is UnitMass.Type:
+            baseUnit = UnitMass.kilograms as! UnitType
+        case is UnitLength.Type:
+            baseUnit = UnitLength.meters as! UnitType
+        default:
+            // For unsupported types, just store the raw value
+            self.init(
+                value: measurement.value,
+                unitCode: String(describing: measurement.unit),
+                unitText: measurement.unit.symbol
+            )
+            return
+        }
+
+        let convertedMeasurement = measurement.converted(to: baseUnit)
         self.init(
-            value: baseValue,
+            value: convertedMeasurement.value,
             unitCode: unitCode,
             unitText: unitText
         )
@@ -61,38 +86,42 @@ extension QuantitativeValue {
 
     /// Convert to a Foundation.Measurement
     public func measurement<UnitType: Unit>(as unitType: UnitType.Type) -> Measurement<UnitType>? {
-        guard let unit = Self.unit(from: unitCode, as: unitType) as? UnitType else { return nil }
-        return Measurement(value: value, unit: unit)
+        // First verify the unitCode matches the expected type
+        let expectedCode = Self.unCefactCode(for: unitType).code
+        guard unitCode == expectedCode else { return nil }
+
+        guard let baseUnit = Self.baseUnit(for: unitType) as? UnitType else { return nil }
+        return Measurement(value: value, unit: baseUnit)
     }
 
-    // Helper to map units to UN/CEFACT codes
-    private static func unCefactCode<UnitType: Unit>(for unit: UnitType) -> (
+    // Helper to map unit types to UN/CEFACT codes
+    private static func unCefactCode<UnitType: Unit>(for type: UnitType.Type) -> (
         code: String, text: String
     ) {
-        switch Unit.self {
+        switch type {
         case is UnitTemperature.Type:
-            return ("CEL", "°C")  // Always convert to Celsius for storage
+            return ("CEL", "°C")
         case is UnitSpeed.Type:
-            return ("KMH", "km/h")  // Always convert to km/h for storage
+            return ("KMH", "km/h")
         case is UnitMass.Type:
-            return ("KGM", "kg")  // Always convert to kilograms for storage
+            return ("KGM", "kg")
         case is UnitLength.Type:
-            return ("MTR", "m")  // Always convert to meters for storage
+            return ("MTR", "m")
         default:
-            return (String(describing: unit), unit.symbol)
+            return (String(describing: type), "")
         }
     }
 
-    // Helper to create Foundation Unit from UN/CEFACT code
-    private static func unit<UnitType: Unit>(from code: String, as type: UnitType.Type) -> Unit? {
-        switch (code, type) {
-        case ("CEL", is UnitTemperature.Type):
+    // Helper to get base unit for a given unit type
+    private static func baseUnit<UnitType: Unit>(for type: UnitType.Type) -> Unit? {
+        switch type {
+        case is UnitTemperature.Type:
             return UnitTemperature.celsius
-        case ("KMH", is UnitSpeed.Type):
+        case is UnitSpeed.Type:
             return UnitSpeed.kilometersPerHour
-        case ("KGM", is UnitMass.Type):
+        case is UnitMass.Type:
             return UnitMass.kilograms
-        case ("MTR", is UnitLength.Type):
+        case is UnitLength.Type:
             return UnitLength.meters
         default:
             return nil
