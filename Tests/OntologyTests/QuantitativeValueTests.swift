@@ -113,24 +113,6 @@ struct QuantitativeValueTests {
         #expect(percentage.unitText == "%")
     }
 
-    @Test("QuantitativeValueCoded property wrapper works correctly")
-    func testPropertyWrapper() throws {
-        let measurement = Measurement(value: 100, unit: UnitSpeed.kilometersPerHour)
-        @QuantitativeValueCoded var speed = measurement
-
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(_speed)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-
-        #expect(json["value"] as? Double == 100.0)
-        #expect(json["unitCode"] as? String == "KMH")
-        #expect(json["unitText"] as? String == "km/h")
-
-        // Test decoding
-        let decoded = try JSONDecoder().decode(QuantitativeValueCoded<UnitSpeed>.self, from: data)
-        #expect(decoded.wrappedValue == measurement)
-    }
-
     @Test("Invalid unit conversion returns nil")
     func testInvalidUnitConversion() {
         // Create a value with an invalid unit code

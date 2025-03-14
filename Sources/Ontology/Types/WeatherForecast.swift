@@ -2,15 +2,12 @@ import Foundation
 
 public struct WeatherForecast: Hashable, Sendable {
     /// The temperature in Celsius
-    @QuantitativeValueCoded<UnitTemperature>
     public var temperature: Measurement<UnitTemperature>?
 
     /// The apparent ("feels like") temperature in Celsius
-    @QuantitativeValueCoded<UnitTemperature>
     public var apparentTemperature: Measurement<UnitTemperature>?
 
     /// Wind speed measurement
-    @QuantitativeValueCoded<UnitSpeed>
     public var windSpeed: Measurement<UnitSpeed>?
 
     /// The humidity.
@@ -28,18 +25,18 @@ public struct WeatherForecast: Hashable, Sendable {
     public var dateTime: Date
 
     /// The high temperature for the day
-    @QuantitativeValueCoded<UnitTemperature>
     public var highTemperature: Measurement<UnitTemperature>?
 
     /// The low temperature for the day
-    @QuantitativeValueCoded<UnitTemperature>
     public var lowTemperature: Measurement<UnitTemperature>?
 
     /// The UV index
     public var uvIndex: Int?
 
+    /// The precipitation amount
+    public var precipitationAmount: Measurement<UnitLength>?
+
     /// The snow amount
-    @QuantitativeValueCoded<UnitLength>
     public var snowfallAmount: Measurement<UnitLength>?
 }
 
@@ -99,42 +96,45 @@ extension WeatherForecast: Codable {
         )
 
         // Encode optional properties
-        if let temperature = _temperature {
-            try container.encode(temperature, forKey: .attribute(.temperature))
+        if let temperature = temperature {
+            try container.encode(QuantitativeValue(temperature), forKey: .attribute(.temperature))
         }
-        if let apparentTemperature = _apparentTemperature {
-            try container.encode(apparentTemperature, forKey: .attribute(.apparentTemperature))
+        if let apparentTemperature = apparentTemperature {
+            try container.encode(
+                QuantitativeValue(apparentTemperature), forKey: .attribute(.apparentTemperature))
         }
         if let humidity = humidity {
             try container.encode(
                 QuantitativeValue.percentage(humidity), forKey: .attribute(.humidity))
         }
-        if let windSpeed = _windSpeed {
-            try container.encode(windSpeed, forKey: .attribute(.windSpeed))
+        if let windSpeed = windSpeed {
+            try container.encode(QuantitativeValue(windSpeed), forKey: .attribute(.windSpeed))
         }
-        if let condition = condition {
-            try container.encode(condition, forKey: .attribute(.condition))
-        }
+        try container.encodeIfPresent(condition, forKey: .attribute(.condition))
         if let precipitationChance = precipitationChance {
             try container.encode(
                 QuantitativeValue.percentage(precipitationChance),
                 forKey: .attribute(.precipitationChance)
             )
         }
-        if let highTemperature = _highTemperature {
-            try container.encode(highTemperature, forKey: .attribute(.highTemperature))
+        if let highTemperature = highTemperature {
+            try container.encode(
+                QuantitativeValue(highTemperature), forKey: .attribute(.highTemperature))
         }
-        if let lowTemperature = _lowTemperature {
-            try container.encode(lowTemperature, forKey: .attribute(.lowTemperature))
+        if let lowTemperature = lowTemperature {
+            try container.encode(
+                QuantitativeValue(lowTemperature), forKey: .attribute(.lowTemperature))
         }
         if let uvIndex = uvIndex {
             try container.encode(uvIndex, forKey: .attribute(.uvIndex))
         }
-        if let precipitationAmount = _precipitationAmount {
-            try container.encode(precipitationAmount, forKey: .attribute(.precipitationAmount))
+        if let precipitationAmount = precipitationAmount {
+            try container.encode(
+                QuantitativeValue(precipitationAmount), forKey: .attribute(.precipitationAmount))
         }
-        if let snowfallAmount = _snowfallAmount {
-            try container.encode(snowfallAmount, forKey: .attribute(.snowfallAmount))
+        if let snowfallAmount = snowfallAmount {
+            try container.encode(
+                QuantitativeValue(snowfallAmount), forKey: .attribute(.snowfallAmount))
         }
 
         try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
@@ -155,15 +155,19 @@ extension WeatherForecast: Codable {
         }
 
         // Decode optional properties
-        temperature = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitTemperature>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.temperature)
-        )?.wrappedValue
+        ) {
+            temperature = quantitativeValue.measurement(as: UnitTemperature.self)
+        }
 
-        apparentTemperature = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitTemperature>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.apparentTemperature)
-        )?.wrappedValue
+        ) {
+            apparentTemperature = quantitativeValue.measurement(as: UnitTemperature.self)
+        }
 
         if let humidityValue = try container.decodeIfPresent(
             QuantitativeValue.self,
@@ -172,10 +176,12 @@ extension WeatherForecast: Codable {
             humidity = humidityValue.value / 100.0
         }
 
-        windSpeed = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitSpeed>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.windSpeed)
-        )?.wrappedValue
+        ) {
+            windSpeed = quantitativeValue.measurement(as: UnitSpeed.self)
+        }
 
         condition = try container.decodeIfPresent(
             String.self,
@@ -189,30 +195,38 @@ extension WeatherForecast: Codable {
             precipitationChance = precipChance.value / 100.0
         }
 
-        highTemperature = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitTemperature>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.highTemperature)
-        )?.wrappedValue
+        ) {
+            highTemperature = quantitativeValue.measurement(as: UnitTemperature.self)
+        }
 
-        lowTemperature = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitTemperature>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.lowTemperature)
-        )?.wrappedValue
+        ) {
+            lowTemperature = quantitativeValue.measurement(as: UnitTemperature.self)
+        }
 
         uvIndex = try container.decodeIfPresent(
             Int.self,
             forKey: .attribute(.uvIndex)
         )
 
-        precipitationAmount = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitLength>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.precipitationAmount)
-        )?.wrappedValue
+        ) {
+            precipitationAmount = quantitativeValue.measurement(as: UnitLength.self)
+        }
 
-        snowfallAmount = try container.decodeIfPresent(
-            QuantitativeValueCoded<UnitLength>.self,
+        if let quantitativeValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
             forKey: .attribute(.snowfallAmount)
-        )?.wrappedValue
+        ) {
+            snowfallAmount = quantitativeValue.measurement(as: UnitLength.self)
+        }
 
         dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }

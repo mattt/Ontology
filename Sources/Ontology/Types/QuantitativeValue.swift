@@ -34,7 +34,7 @@ extension QuantitativeValue: Codable {
         if encoder.codingPath.isEmpty {
             try container.encode(schema.org, forKey: .context)
         }
-        try container.encode("QuantitativeValue", forKey: .type)
+        try container.encode(String(describing: Self.self), forKey: .type)
 
         try container.encode(value, forKey: .attribute(.value))
         try container.encode(unitCode, forKey: .attribute(.unitCode))
@@ -157,33 +157,5 @@ extension QuantitativeValue {
             unitCode: "P1",  // UN/CEFACT code for percentage
             unitText: "%"
         )
-    }
-}
-
-/// Property wrapper for transparent Measurement encoding
-@propertyWrapper
-public struct QuantitativeValueCoded<Unit: Dimension>: Hashable, Codable, @unchecked Sendable {
-    public var wrappedValue: Measurement<Unit>
-
-    public init(wrappedValue: Measurement<Unit>) {
-        self.wrappedValue = wrappedValue
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        try QuantitativeValue(wrappedValue).encode(to: encoder)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let quantitativeValue = try QuantitativeValue(from: decoder)
-        guard let measurement = quantitativeValue.measurement(as: Unit.self) else {
-            throw DecodingError.dataCorrupted(
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription:
-                        "Could not convert QuantitativeValue to Measurement<\(Unit.self)>"
-                )
-            )
-        }
-        self.wrappedValue = measurement
     }
 }

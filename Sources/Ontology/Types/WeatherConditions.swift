@@ -2,15 +2,12 @@ import Foundation
 
 public struct WeatherConditions: Hashable, Sendable {
     /// The temperature in Celsius
-    @QuantitativeValueCoded<UnitTemperature>
     public var temperature: Measurement<UnitTemperature>
 
     /// The apparent ("feels like") temperature in Celsius
-    @QuantitativeValueCoded<UnitTemperature>
     public var apparentTemperature: Measurement<UnitTemperature>
 
     /// Wind speed measurement
-    @QuantitativeValueCoded<UnitSpeed>
     public var windSpeed: Measurement<UnitSpeed>
 
     /// The humidity.
@@ -77,11 +74,12 @@ extension WeatherConditions: Codable {
         try container.encode(
             "https://developer.apple.com/WeatherKit/#/WeatherConditions", forKey: .type)
 
-        // The property wrapper will now handle the conversion automatically
-        try container.encode(_temperature, forKey: .attribute(.temperature))
-        try container.encode(_apparentTemperature, forKey: .attribute(.apparentTemperature))
+        // Encode properties
+        try container.encode(QuantitativeValue(temperature), forKey: .attribute(.temperature))
+        try container.encode(
+            QuantitativeValue(apparentTemperature), forKey: .attribute(.apparentTemperature))
         try container.encode(QuantitativeValue.percentage(humidity), forKey: .attribute(.humidity))
-        try container.encode(_windSpeed, forKey: .attribute(.windSpeed))
+        try container.encode(QuantitativeValue(windSpeed), forKey: .attribute(.windSpeed))
         try container.encode(condition, forKey: .attribute(.condition))
         if let precipitationChance = precipitationChance {
             try container.encode(
@@ -107,24 +105,53 @@ extension WeatherConditions: Codable {
         }
 
         // Decode properties
-        temperature = try container.decode(
-            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.temperature)
-        ).wrappedValue
-        apparentTemperature = try container.decode(
-            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.apparentTemperature)
-        ).wrappedValue
-        humidity =
-            try container.decode(QuantitativeValue.self, forKey: .attribute(.humidity)).value
-            / 100.0
-        windSpeed = try container.decode(
-            QuantitativeValueCoded<UnitSpeed>.self, forKey: .attribute(.windSpeed)
-        ).wrappedValue
-        condition = try container.decode(String.self, forKey: .attribute(.condition))
-        if let precipitationChance = try container.decodeIfPresent(
-            QuantitativeValue.self, forKey: .attribute(.precipitationChance))
-        {
-            self.precipitationChance = precipitationChance.value / 100.0
+        let tempValue = try container.decode(
+            QuantitativeValue.self, forKey: .attribute(.temperature))
+        guard let temp = tempValue.measurement(as: UnitTemperature.self) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .attribute(.temperature),
+                in: container,
+                debugDescription: "Could not convert temperature QuantitativeValue to Measurement"
+            )
         }
+        temperature = temp
+
+        let apparentTempValue = try container.decode(
+            QuantitativeValue.self, forKey: .attribute(.apparentTemperature))
+        guard let apparentTemp = apparentTempValue.measurement(as: UnitTemperature.self) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .attribute(.apparentTemperature),
+                in: container,
+                debugDescription:
+                    "Could not convert apparent temperature QuantitativeValue to Measurement"
+            )
+        }
+        apparentTemperature = apparentTemp
+
+        let humidityValue = try container.decode(
+            QuantitativeValue.self, forKey: .attribute(.humidity))
+        humidity = humidityValue.value / 100.0
+
+        let windSpeedValue = try container.decode(
+            QuantitativeValue.self, forKey: .attribute(.windSpeed))
+        guard let speed = windSpeedValue.measurement(as: UnitSpeed.self) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .attribute(.windSpeed),
+                in: container,
+                debugDescription: "Could not convert wind speed QuantitativeValue to Measurement"
+            )
+        }
+        windSpeed = speed
+
+        condition = try container.decode(String.self, forKey: .attribute(.condition))
+
+        if let precipChance = try container.decodeIfPresent(
+            QuantitativeValue.self,
+            forKey: .attribute(.precipitationChance)
+        ) {
+            precipitationChance = precipChance.value / 100.0
+        }
+
         dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }
 }
