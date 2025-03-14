@@ -25,7 +25,7 @@ public struct WeatherConditions: Hashable, Sendable {
     public var precipitationChance: Double?
 
     /// The date and time of the observation
-    public var dateTime: DateTime
+    public var dateTime: Date
 }
 
 #if canImport(WeatherKit)
@@ -37,7 +37,7 @@ public struct WeatherConditions: Hashable, Sendable {
             self.windSpeed = current.wind.speed
             self.humidity = current.humidity
             self.condition = current.condition.description
-            self.dateTime = DateTime(current.date)
+            self.dateTime = current.date
         }
 
         /// Initialize weather conditions from an HourWeather instance
@@ -48,7 +48,7 @@ public struct WeatherConditions: Hashable, Sendable {
             self.windSpeed = forecast.wind.speed
             self.condition = forecast.condition.description
             self.precipitationChance = forecast.precipitationChance
-            self.dateTime = DateTime(forecast.date)
+            self.dateTime = forecast.date
         }
     }
 #endif
@@ -77,51 +77,51 @@ extension WeatherConditions: Codable {
         try container.encode(
             "https://developer.apple.com/WeatherKit/#/WeatherConditions", forKey: .type)
 
-        // Encode properties
-        try container.encode(temperature, forKey: .attribute(.temperature))
-        try container.encode(apparentTemperature, forKey: .attribute(.apparentTemperature))
+        // The property wrapper will now handle the conversion automatically
+        try container.encode(_temperature, forKey: .attribute(.temperature))
+        try container.encode(_apparentTemperature, forKey: .attribute(.apparentTemperature))
         try container.encode(QuantitativeValue.percentage(humidity), forKey: .attribute(.humidity))
-        try container.encode(windSpeed, forKey: .attribute(.windSpeed))
+        try container.encode(_windSpeed, forKey: .attribute(.windSpeed))
         try container.encode(condition, forKey: .attribute(.condition))
         if let precipitationChance = precipitationChance {
             try container.encode(
                 QuantitativeValue.percentage(precipitationChance),
                 forKey: .attribute(.precipitationChance))
         }
-        try container.encode(dateTime, forKey: .attribute(.dateTime))
+        try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
         // Verify type is correct
-        let describedType = String(describing: Self.self)
+        let expectedType = "https://developer.apple.com/WeatherKit/#/WeatherConditions"
         let decodedType = try container.decode(String.self, forKey: .type)
-        guard decodedType == describedType else {
+        guard decodedType == expectedType else {
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
                 in: container,
                 debugDescription:
-                    "Expected type to be '\(describedType)', but found \(decodedType)"
+                    "Expected type to be '\(expectedType)', but found \(decodedType)"
             )
         }
 
         // Decode properties
         temperature = try container.decode(
-            Measurement<UnitTemperature>.self, forKey: .attribute(.temperature))
+            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.temperature)).wrappedValue
         apparentTemperature = try container.decode(
-            Measurement<UnitTemperature>.self, forKey: .attribute(.apparentTemperature))
+            QuantitativeValueCoded<UnitTemperature>.self, forKey: .attribute(.apparentTemperature)).wrappedValue
         humidity =
             try container.decode(QuantitativeValue.self, forKey: .attribute(.humidity)).value
             / 100.0
         windSpeed = try container.decode(
-            Measurement<UnitSpeed>.self, forKey: .attribute(.windSpeed))
+            QuantitativeValueCoded<UnitSpeed>.self, forKey: .attribute(.windSpeed)).wrappedValue
         condition = try container.decode(String.self, forKey: .attribute(.condition))
         if let precipitationChance = try container.decodeIfPresent(
             QuantitativeValue.self, forKey: .attribute(.precipitationChance))
         {
             self.precipitationChance = precipitationChance.value / 100.0
         }
-        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime))
+        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }
 }
