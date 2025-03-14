@@ -1,204 +1,219 @@
 import Foundation
 
-/// A weather forecast following the NWS API ontology
 public struct WeatherForecast: Hashable, Sendable {
-    /// Unique identifier for the forecast
-    public var identifier: String?
+    /// The temperature in Celsius
+    @QuantitativeValueCoded<UnitTemperature>
+    public var temperature: Measurement<UnitTemperature>?
 
-    /// The type of GeoJSON feature
-    public let type: String = "Feature"
+    /// The apparent ("feels like") temperature in Celsius
+    @QuantitativeValueCoded<UnitTemperature>
+    public var apparentTemperature: Measurement<UnitTemperature>?
 
-    /// Geometry information for the forecast area
-    public struct Geometry: Hashable, Sendable {
-        public let type: String = "Polygon"
-        public var coordinates: [[[Double]]]
-    }
+    /// Wind speed measurement
+    @QuantitativeValueCoded<UnitSpeed>
+    public var windSpeed: Measurement<UnitSpeed>?
 
-    /// The geometry of the forecast area
-    public var geometry: Geometry
+    /// The humidity.
+    /// The value is from 0 (0% humidity) to 1 (100% humidity)
+    public var humidity: Double?
 
-    /// Properties of the weather forecast
-    public struct Properties: Hashable, Sendable {
-        /// The units system used (e.g., "us", "si")
-        public var units: String
+    /// The condition description
+    public var condition: String?
 
-        /// The forecast generator used
-        public var forecastGenerator: String
+    /// The probability of precipitation.
+    /// The value is from 0 (0% probability) to 1 (100% probability)
+    public var precipitationChance: Double?
 
-        /// When the forecast was generated
-        public var generatedAt: DateTime
+    /// The date and time of the forecast
+    public var dateTime: Date
 
-        /// When the forecast was last updated
-        public var updateTime: DateTime
+    /// The high temperature for the day
+    @QuantitativeValueCoded<UnitTemperature>
+    public var highTemperature: Measurement<UnitTemperature>?
 
-        /// The valid time range for the forecast
-        public var validTimes: String
+    /// The low temperature for the day
+    @QuantitativeValueCoded<UnitTemperature>
+    public var lowTemperature: Measurement<UnitTemperature>?
 
-        /// Elevation information
-        public struct Elevation: Hashable, Sendable {
-            public var unitCode: String
-            public var value: Double
-        }
+    /// The UV index
+    public var uvIndex: Int?
 
-        /// The elevation of the forecast area
-        public var elevation: Elevation
-
-        /// A single forecast period
-        public struct Period: Hashable, Sendable {
-            /// The period number
-            public var number: Int
-
-            /// The name of the period (e.g., "Tonight", "Monday")
-            public var name: String
-
-            /// Start time of the forecast period
-            public var startTime: DateTime
-
-            /// End time of the forecast period
-            public var endTime: DateTime
-
-            /// Whether this period is during daytime
-            public var isDaytime: Bool
-
-            /// The forecasted temperature
-            public var temperature: Int
-
-            /// The unit of temperature measurement
-            public var temperatureUnit: String
-
-            /// The temperature trend, if any
-            public var temperatureTrend: String?
-
-            /// Precipitation probability information
-            public struct ProbabilityOfPrecipitation: Hashable, Sendable {
-                public var unitCode: String
-                public var value: Int?
-            }
-
-            /// The probability of precipitation
-            public var probabilityOfPrecipitation: ProbabilityOfPrecipitation?
-
-            /// The forecasted wind speed
-            public var windSpeed: String
-
-            /// The forecasted wind direction
-            public var windDirection: String
-
-            /// URL for the forecast icon
-            public var icon: URL
-
-            /// Short forecast description
-            public var shortForecast: String
-
-            /// Detailed forecast description
-            public var detailedForecast: String
-        }
-
-        /// The forecast periods
-        public var periods: [Period]
-    }
-
-    /// The forecast properties
-    public var properties: Properties
+    /// The snow amount
+    @QuantitativeValueCoded<UnitLength>
+    public var snowfallAmount: Measurement<UnitLength>?
 }
 
+#if canImport(WeatherKit)
+    import WeatherKit
+
+    extension WeatherForecast {
+        public init(_ forecast: DayWeather) {
+            self.dateTime = forecast.date
+            self.highTemperature = forecast.highTemperature
+            self.lowTemperature = forecast.lowTemperature
+            self.precipitationChance = forecast.precipitationChance
+            self.condition = forecast.condition.description
+            self.uvIndex = forecast.uvIndex.value
+            self.snowfallAmount = forecast.snowfallAmount
+        }
+
+        public init(_ forecast: HourWeather) {
+            self.dateTime = forecast.date
+            self.temperature = forecast.temperature
+            self.apparentTemperature = forecast.apparentTemperature
+            self.humidity = forecast.humidity
+            self.windSpeed = forecast.wind.speed
+            self.condition = forecast.condition.description
+            self.precipitationChance = forecast.precipitationChance
+            self.uvIndex = forecast.uvIndex.value
+        }
+
+        public init(_ forecast: MinuteWeather) {
+            self.dateTime = forecast.date
+            self.precipitationChance = forecast.precipitationChance
+        }
+    }
+#endif
+
+// Conform to Codable for JSON-LD serialization
 extension WeatherForecast: Codable {
     private enum CodingKeys: String, CodingKey {
-        case type, geometry, properties
-    }
-
-    private enum VocabularyCodingKey: String, CodingKey {
-        case vocabulary = "@vocab"
-        case version = "@version"
-        case weatherService = "wx"
-        case geoService = "geo"
-        case unitService = "unit"
+        case temperature, apparentTemperature, humidity, windSpeed
+        case condition, precipitationChance, dateTime
+        case highTemperature, lowTemperature, uvIndex
+        case precipitationAmount, snowfallAmount
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        do {
-            var contextContainer = encoder.unkeyedContainer()
-            try contextContainer.encode("https://geojson.org/geojson-ld/geojson-context.jsonld")
-
-            var vocabularyContainer = contextContainer.nestedContainer(
-                keyedBy: VocabularyCodingKey.self)
-            try vocabularyContainer.encode("1.1", forKey: .version)
-            try vocabularyContainer.encode(
-                "https://api.weather.gov/ontology#", forKey: .weatherService)
-            try vocabularyContainer.encode(
-                "http://www.opengis.net/ont/geosparql#", forKey: .geoService)
-            try vocabularyContainer.encode(
-                "http://codes.wmo.int/common/unit/", forKey: .unitService)
-            try vocabularyContainer.encode("https://api.weather.gov/ontology#", forKey: .vocabulary)
-        } catch {
-            throw error
+        // Encode @context if we're at the root level
+        if encoder.codingPath.isEmpty {
+            try container.encode(schema.org, forKey: .context)
         }
 
         // Encode @type
-        try container.encode(type, forKey: .type)
+        try container.encode(
+            "https://developer.apple.com/WeatherKit/#/WeatherForecast",
+            forKey: .type
+        )
 
-        // Encode @id
-        try container.encodeIfPresent(identifier, forKey: .id)
+        // Encode optional properties
+        if let temperature = _temperature {
+            try container.encode(temperature, forKey: .attribute(.temperature))
+        }
+        if let apparentTemperature = _apparentTemperature {
+            try container.encode(apparentTemperature, forKey: .attribute(.apparentTemperature))
+        }
+        if let humidity = humidity {
+            try container.encode(
+                QuantitativeValue.percentage(humidity), forKey: .attribute(.humidity))
+        }
+        if let windSpeed = _windSpeed {
+            try container.encode(windSpeed, forKey: .attribute(.windSpeed))
+        }
+        if let condition = condition {
+            try container.encode(condition, forKey: .attribute(.condition))
+        }
+        if let precipitationChance = precipitationChance {
+            try container.encode(
+                QuantitativeValue.percentage(precipitationChance),
+                forKey: .attribute(.precipitationChance)
+            )
+        }
+        if let highTemperature = _highTemperature {
+            try container.encode(highTemperature, forKey: .attribute(.highTemperature))
+        }
+        if let lowTemperature = _lowTemperature {
+            try container.encode(lowTemperature, forKey: .attribute(.lowTemperature))
+        }
+        if let uvIndex = uvIndex {
+            try container.encode(uvIndex, forKey: .attribute(.uvIndex))
+        }
+        if let precipitationAmount = _precipitationAmount {
+            try container.encode(precipitationAmount, forKey: .attribute(.precipitationAmount))
+        }
+        if let snowfallAmount = _snowfallAmount {
+            try container.encode(snowfallAmount, forKey: .attribute(.snowfallAmount))
+        }
 
-        // Encode properties
-        try container.encode(geometry, forKey: .attribute(.geometry))
-        try container.encode(properties, forKey: .attribute(.properties))
+        try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
         // Verify type is correct
+        let expectedType = "https://developer.apple.com/WeatherKit/#/WeatherForecast"
         let decodedType = try container.decode(String.self, forKey: .type)
-        guard decodedType == "Feature" else {
+        guard decodedType == expectedType else {
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
                 in: container,
-                debugDescription: "Expected type to be 'Feature', but found \(decodedType)"
+                debugDescription: "Expected type to be '\(expectedType)', but found \(decodedType)"
             )
         }
 
-        // Decode @id
-        identifier = try container.decodeIfPresent(String.self, forKey: .id)
+        // Decode optional properties
+        temperature = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitTemperature>.self,
+            forKey: .attribute(.temperature)
+        )?.wrappedValue
 
-        // Decode properties
-        geometry = try container.decode(Geometry.self, forKey: .attribute(.geometry))
-        properties = try container.decode(Properties.self, forKey: .attribute(.properties))
-    }
-}
+        apparentTemperature = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitTemperature>.self,
+            forKey: .attribute(.apparentTemperature)
+        )?.wrappedValue
 
-// MARK: - Nested Types Codable Conformance
+        if let humidityValue = try container.decodeIfPresent(
+            QuantitativeValue.self,
+            forKey: .attribute(.humidity)
+        ) {
+            humidity = humidityValue.value / 100.0
+        }
 
-extension WeatherForecast.Geometry: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case type, coordinates
-    }
-}
+        windSpeed = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitSpeed>.self,
+            forKey: .attribute(.windSpeed)
+        )?.wrappedValue
 
-extension WeatherForecast.Properties: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case units, forecastGenerator, generatedAt, updateTime, validTimes, elevation, periods
-    }
-}
+        condition = try container.decodeIfPresent(
+            String.self,
+            forKey: .attribute(.condition)
+        )
 
-extension WeatherForecast.Properties.Elevation: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case unitCode, value
-    }
-}
+        if let precipChance = try container.decodeIfPresent(
+            QuantitativeValue.self,
+            forKey: .attribute(.precipitationChance)
+        ) {
+            precipitationChance = precipChance.value / 100.0
+        }
 
-extension WeatherForecast.Properties.Period: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case number, name, startTime, endTime, isDaytime, temperature, temperatureUnit
-        case temperatureTrend, probabilityOfPrecipitation, windSpeed, windDirection
-        case icon, shortForecast, detailedForecast
-    }
-}
+        highTemperature = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitTemperature>.self,
+            forKey: .attribute(.highTemperature)
+        )?.wrappedValue
 
-extension WeatherForecast.Properties.Period.ProbabilityOfPrecipitation: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case unitCode, value
+        lowTemperature = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitTemperature>.self,
+            forKey: .attribute(.lowTemperature)
+        )?.wrappedValue
+
+        uvIndex = try container.decodeIfPresent(
+            Int.self,
+            forKey: .attribute(.uvIndex)
+        )
+
+        precipitationAmount = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitLength>.self,
+            forKey: .attribute(.precipitationAmount)
+        )?.wrappedValue
+
+        snowfallAmount = try container.decodeIfPresent(
+            QuantitativeValueCoded<UnitLength>.self,
+            forKey: .attribute(.snowfallAmount)
+        )?.wrappedValue
+
+        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }
 }
