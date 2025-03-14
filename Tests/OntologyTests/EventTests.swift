@@ -12,14 +12,14 @@ struct EventTests {
         let event = EKEvent(eventStore: eventStore)
 
         event.title = "Test Event"
-        event.startDate = Date(timeIntervalSince1970: 0)
-        event.endDate = Date(timeIntervalSince1970: 3600)
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
 
         let ontologyEvent = Event(event)
 
         #expect(ontologyEvent.name == "Test Event")
-        #expect(ontologyEvent.startDate?.value == Date(timeIntervalSince1970: 0))
-        #expect(ontologyEvent.endDate?.value == Date(timeIntervalSince1970: 3600))
+        #expect(ontologyEvent.startDate?.value == Date(timeIntervalSinceReferenceDate: 0))
+        #expect(ontologyEvent.endDate?.value == Date(timeIntervalSinceReferenceDate: 3600))
     }
 
     @Test("Event initialization preserves timezone information")
@@ -27,8 +27,8 @@ struct EventTests {
         let eventStore = EKEventStore()
         let event = EKEvent(eventStore: eventStore)
 
-        event.startDate = Date(timeIntervalSince1970: 0)
-        event.endDate = Date(timeIntervalSince1970: 3600)
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
         event.timeZone = TimeZone(identifier: "America/New_York")!
 
         let ontologyEvent = Event(event)
@@ -43,8 +43,8 @@ struct EventTests {
         let event = EKEvent(eventStore: eventStore)
 
         event.title = "Test Event"
-        event.startDate = Date(timeIntervalSince1970: 0)
-        event.endDate = Date(timeIntervalSince1970: 3600)
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
         event.location = "123 Test Street"
         event.url = URL(string: "https://example.com")
 
@@ -56,8 +56,8 @@ struct EventTests {
         // Test with nil properties
         let emptyEvent = EKEvent(eventStore: eventStore)
         emptyEvent.title = "Minimal Event"
-        emptyEvent.startDate = Date(timeIntervalSince1970: 0)
-        emptyEvent.endDate = Date(timeIntervalSince1970: 3600)
+        emptyEvent.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        emptyEvent.endDate = Date(timeIntervalSinceReferenceDate: 3600)
 
         let minimalEvent = Event(emptyEvent)
 
@@ -70,11 +70,11 @@ struct EventTests {
         let eventStore = EKEventStore()
         let event = EKEvent(eventStore: eventStore)
 
-        event.title = "Test Event"
-        event.startDate = Date(timeIntervalSince1970: 0)
-        event.endDate = Date(timeIntervalSince1970: 3600)
+        event.title = "NYE"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600 * 5)
         event.timeZone = TimeZone(identifier: "America/New_York")!
-        event.location = "123 Test Street"
+        event.location = "1550 Broadway, New York, NY 10036"
         event.url = URL(string: "https://example.com")
 
         let ontologyEvent = Event(event)
@@ -85,9 +85,11 @@ struct EventTests {
 
         #expect(json["@context"] as? String == "https://schema.org")
         #expect(json["@type"] as? String == "Event")
-        #expect(json["name"] as? String == "Test Event")
-        #expect(json["location"] as? String == "123 Test Street")
+        #expect(json["name"] as? String == "NYE")
+        #expect(json["location"] as? String == "1550 Broadway, New York, NY 10036")
         #expect(json["url"] as? String == "https://example.com")
+        #expect(json["startDate"] as? String == "2000-12-31T19:00:00.000-05:00")
+        #expect(json["endDate"] as? String == "2001-01-01T00:00:00.000-05:00")
     }
 
     @Test("Event round-trip serialization preserves data")
@@ -96,9 +98,9 @@ struct EventTests {
         let event = EKEvent(eventStore: eventStore)
 
         event.title = "Test Event"
-        event.startDate = Date(timeIntervalSince1970: 0)
-        event.endDate = Date(timeIntervalSince1970: 3600)
-        event.timeZone = TimeZone(identifier: "America/New_York")!
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+        event.timeZone = TimeZone(identifier: "America/Los_Angeles")!
 
         let original = Event(event)
         let encoder = JSONEncoder()
@@ -108,7 +110,7 @@ struct EventTests {
         #expect(decoded.name == original.name)
         #expect(decoded.startDate?.value == original.startDate?.value)
         #expect(decoded.endDate?.value == original.endDate?.value)
-        #expect(decoded.startDate?.timeZone?.secondsFromGMT() == (-5 * 3600))
-        #expect(decoded.endDate?.timeZone?.secondsFromGMT() == (-5 * 3600))
+        #expect(decoded.startDate?.timeZone?.secondsFromGMT() == (-8 * 3600))
+        #expect(decoded.endDate?.timeZone?.secondsFromGMT() == (-8 * 3600))
     }
 }
