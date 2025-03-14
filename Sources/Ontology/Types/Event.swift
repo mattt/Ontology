@@ -44,8 +44,8 @@ public struct Event: Hashable, Sendable {
         /// Initialize an Event with an EventKit event
         public init(_ event: EKEvent) {
             self.name = event.title
-            self.startDate = DateTime(event.startDate)
-            self.endDate = DateTime(event.endDate)
+            self.startDate = DateTime(event.startDate, timeZone: event.timeZone)
+            self.endDate = DateTime(event.endDate, timeZone: event.timeZone)
             self.location = event.location
             self.url = event.url
         }
