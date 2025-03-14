@@ -1,6 +1,9 @@
 import Foundation
 
 public struct WeatherForecast: Hashable, Sendable {
+    /// The date and time of the forecast
+    public var dateTime: Date
+
     /// The temperature in Celsius
     public var temperature: Measurement<UnitTemperature>?
 
@@ -17,13 +20,6 @@ public struct WeatherForecast: Hashable, Sendable {
     /// The condition description
     public var condition: String?
 
-    /// The probability of precipitation.
-    /// The value is from 0 (0% probability) to 1 (100% probability)
-    public var precipitationChance: Double?
-
-    /// The date and time of the forecast
-    public var dateTime: Date
-
     /// The high temperature for the day
     public var highTemperature: Measurement<UnitTemperature>?
 
@@ -33,8 +29,12 @@ public struct WeatherForecast: Hashable, Sendable {
     /// The UV index
     public var uvIndex: Int?
 
-    /// The precipitation amount
-    public var precipitationAmount: Measurement<UnitLength>?
+    /// The probability of precipitation.
+    /// The value is from 0 (0% probability) to 1 (100% probability)
+    public var precipitationChance: Double?
+
+    /// The precipitation intensity
+    public var precipitationIntensity: Measurement<UnitSpeed>?
 
     /// The snow amount
     public var snowfallAmount: Measurement<UnitLength>?
@@ -68,6 +68,7 @@ public struct WeatherForecast: Hashable, Sendable {
         public init(_ forecast: MinuteWeather) {
             self.dateTime = forecast.date
             self.precipitationChance = forecast.precipitationChance
+            self.precipitationIntensity = forecast.precipitationIntensity
         }
     }
 #endif
@@ -76,9 +77,8 @@ public struct WeatherForecast: Hashable, Sendable {
 extension WeatherForecast: Codable {
     private enum CodingKeys: String, CodingKey {
         case temperature, apparentTemperature, humidity, windSpeed
-        case condition, precipitationChance, dateTime
+        case condition, precipitationChance, precipitationIntensity, snowfallAmount, dateTime
         case highTemperature, lowTemperature, uvIndex
-        case precipitationAmount, snowfallAmount
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -95,7 +95,8 @@ extension WeatherForecast: Codable {
             forKey: .type
         )
 
-        // Encode optional properties
+        // Encode properties
+        try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
         if let temperature = temperature {
             try container.encode(QuantitativeValue(temperature), forKey: .attribute(.temperature))
         }
@@ -128,16 +129,15 @@ extension WeatherForecast: Codable {
         if let uvIndex = uvIndex {
             try container.encode(uvIndex, forKey: .attribute(.uvIndex))
         }
-        if let precipitationAmount = precipitationAmount {
+        if let precipitationIntensity = precipitationIntensity {
             try container.encode(
-                QuantitativeValue(precipitationAmount), forKey: .attribute(.precipitationAmount))
+                QuantitativeValue(precipitationIntensity),
+                forKey: .attribute(.precipitationIntensity))
         }
         if let snowfallAmount = snowfallAmount {
             try container.encode(
                 QuantitativeValue(snowfallAmount), forKey: .attribute(.snowfallAmount))
         }
-
-        try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
     }
 
     public init(from decoder: Decoder) throws {
@@ -154,7 +154,9 @@ extension WeatherForecast: Codable {
             )
         }
 
-        // Decode optional properties
+        // Decode properties
+        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
+
         if let quantitativeValue = try container.decodeIfPresent(
             QuantitativeValue.self,
             forKey: .attribute(.temperature)
@@ -216,9 +218,9 @@ extension WeatherForecast: Codable {
 
         if let quantitativeValue = try container.decodeIfPresent(
             QuantitativeValue.self,
-            forKey: .attribute(.precipitationAmount)
+            forKey: .attribute(.precipitationIntensity)
         ) {
-            precipitationAmount = quantitativeValue.measurement(as: UnitLength.self)
+            precipitationIntensity = quantitativeValue.measurement(as: UnitSpeed.self)
         }
 
         if let quantitativeValue = try container.decodeIfPresent(
@@ -227,7 +229,5 @@ extension WeatherForecast: Codable {
         ) {
             snowfallAmount = quantitativeValue.measurement(as: UnitLength.self)
         }
-
-        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }
 }

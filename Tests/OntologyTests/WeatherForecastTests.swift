@@ -9,17 +9,17 @@ struct WeatherForecastTests {
     func testBasicInitialization() {
         let date = Date()
         let forecast = WeatherForecast(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: date,
             highTemperature: Measurement(value: 25, unit: UnitTemperature.celsius),
             lowTemperature: Measurement(value: 15, unit: UnitTemperature.celsius),
             uvIndex: 5,
-            precipitationAmount: Measurement(value: 2.5, unit: UnitLength.millimeters),
+            precipitationChance: 0.3,
+            precipitationIntensity: Measurement(value: 0.0001, unit: UnitSpeed.metersPerSecond),
             snowfallAmount: Measurement(value: 0, unit: UnitLength.centimeters)
         )
 
@@ -34,8 +34,8 @@ struct WeatherForecastTests {
         #expect(forecast.highTemperature?.value == 25)
         #expect(forecast.lowTemperature?.value == 15)
         #expect(forecast.uvIndex == 5)
-        #expect(forecast.precipitationAmount?.value == 2.5)
-        #expect(forecast.precipitationAmount?.unit == UnitLength.millimeters)
+        #expect(forecast.precipitationIntensity?.value == 0.0001)
+        #expect(forecast.precipitationIntensity?.unit == UnitSpeed.metersPerSecond)
         #expect(forecast.snowfallAmount?.value == 0)
     }
 
@@ -43,17 +43,17 @@ struct WeatherForecastTests {
     func testJSONLDEncoding() throws {
         let date = Date()
         let forecast = WeatherForecast(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: date,
             highTemperature: Measurement(value: 25, unit: UnitTemperature.celsius),
             lowTemperature: Measurement(value: 15, unit: UnitTemperature.celsius),
             uvIndex: 5,
-            precipitationAmount: Measurement(value: 2.5, unit: UnitLength.millimeters),
+            precipitationChance: 0.3,
+            precipitationIntensity: Measurement(value: 0.0001, unit: UnitSpeed.metersPerSecond),
             snowfallAmount: Measurement(value: 0, unit: UnitLength.centimeters)
         )
 
@@ -95,34 +95,25 @@ struct WeatherForecastTests {
 
         // Check UV index encoding
         #expect(json["uvIndex"] as? Int == 5)
-
-        // Check precipitation amount encoding
-        if let precipAmount = json["precipitationAmount"] as? [String: Any] {
-            #expect(precipAmount["value"] as? Double == 0.0025)
-            #expect(precipAmount["unitCode"] as? String == "MTR")
-        } else {
-            Issue.record("Precipitation amount encoding not found or incorrect")
-        }
     }
 
     @Test("JSON-LD round-trip encoding/decoding works")
     func testJSONLDRoundTrip() throws {
         let date = Date()
         let original = WeatherForecast(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: date,
             highTemperature: Measurement(value: 25, unit: UnitTemperature.celsius),
             lowTemperature: Measurement(value: 15, unit: UnitTemperature.celsius),
             uvIndex: 5,
-            precipitationAmount: Measurement(value: 2.5, unit: UnitLength.millimeters),
+            precipitationChance: 0.3,
+            precipitationIntensity: Measurement(value: 0.0001, unit: UnitSpeed.metersPerSecond),
             snowfallAmount: Measurement(value: 0, unit: UnitLength.centimeters)
         )
-
         let encoder = JSONEncoder()
         let data = try encoder.encode(original)
 
@@ -139,7 +130,7 @@ struct WeatherForecastTests {
         #expect(decoded.highTemperature == original.highTemperature)
         #expect(decoded.lowTemperature == original.lowTemperature)
         #expect(decoded.uvIndex == original.uvIndex)
-        #expect(decoded.precipitationAmount == original.precipitationAmount)
+        #expect(decoded.precipitationIntensity == original.precipitationIntensity)
         #expect(decoded.snowfallAmount == original.snowfallAmount)
     }
 
@@ -147,17 +138,17 @@ struct WeatherForecastTests {
     func testOptionalProperties() throws {
         let date = Date()
         let forecast = WeatherForecast(
+            dateTime: date,
             temperature: nil,
             apparentTemperature: nil,
             windSpeed: nil,
             humidity: nil,
             condition: nil,
-            precipitationChance: nil,
-            dateTime: date,
             highTemperature: nil,
             lowTemperature: nil,
             uvIndex: nil,
-            precipitationAmount: nil,
+            precipitationChance: nil,
+            precipitationIntensity: nil,
             snowfallAmount: nil
         )
 
@@ -191,7 +182,7 @@ struct WeatherForecastTests {
         #expect(decoded.highTemperature == nil)
         #expect(decoded.lowTemperature == nil)
         #expect(decoded.uvIndex == nil)
-        #expect(decoded.precipitationAmount == nil)
+        #expect(decoded.precipitationIntensity == nil)
         #expect(decoded.snowfallAmount == nil)
         #expect(abs(decoded.dateTime.timeIntervalSince(date)) < 0.001)
     }
