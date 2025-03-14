@@ -4,7 +4,7 @@ import Testing
 @testable import Ontology
 
 @Suite
-struct TimeZoneExtensionTests {
+struct TimeZoneISO8601ParsingTests {
     @Test("Parse UTC timezone with Z suffix")
     func testUTCTimezone() {
         let timestamp = "2025-03-14T12:00:00Z"
