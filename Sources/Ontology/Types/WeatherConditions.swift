@@ -2,6 +2,9 @@ import Foundation
 
 /// A structured value representing weather conditions.
 public struct WeatherConditions: Hashable, Sendable {
+    /// The date and time of the observation
+    public var dateTime: Date
+
     /// The temperature in Celsius
     public var temperature: Measurement<UnitTemperature>
 
@@ -21,9 +24,6 @@ public struct WeatherConditions: Hashable, Sendable {
     /// The probability of precipitation during the hour.
     /// The value is from 0 (0% probability) to 1 (100% probability)
     public var precipitationChance: Double?
-
-    /// The date and time of the observation
-    public var dateTime: Date
 }
 
 #if canImport(WeatherKit)
@@ -31,23 +31,23 @@ public struct WeatherConditions: Hashable, Sendable {
     extension WeatherConditions {
         /// Initialize weather conditions from a CurrentWeather instance
         public init(_ current: CurrentWeather) {
+            self.dateTime = current.date
             self.temperature = current.temperature
             self.apparentTemperature = current.apparentTemperature
             self.windSpeed = current.wind.speed
             self.humidity = current.humidity
             self.condition = current.condition.description
-            self.dateTime = current.date
         }
 
         /// Initialize weather conditions from an HourWeather instance
         public init(_ forecast: HourWeather) {
+            self.dateTime = forecast.date
             self.temperature = forecast.temperature
             self.apparentTemperature = forecast.apparentTemperature
             self.humidity = forecast.humidity
             self.windSpeed = forecast.wind.speed
             self.condition = forecast.condition.description
             self.precipitationChance = forecast.precipitationChance
-            self.dateTime = forecast.date
         }
     }
 #endif
@@ -55,13 +55,13 @@ public struct WeatherConditions: Hashable, Sendable {
 // Conform to Codable for JSON-LD serialization
 extension WeatherConditions: Codable {
     private enum CodingKeys: String, CodingKey {
-        case temperature
-        case apparentTemperature
+        case dateTime
+        case temperature, apparentTemperature
         case humidity
         case windSpeed
         case condition
         case precipitationChance
-        case dateTime
+        case provider, attribution, attributionLink
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -89,6 +89,14 @@ extension WeatherConditions: Codable {
                 forKey: .attribute(.precipitationChance))
         }
         try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
+
+        // Add required WeatherKit attribution
+        try container.encode("Apple Weather", forKey: .attribute(.provider))
+        try container.encode(
+            "Weather data provided by Apple Weather", forKey: .attribute(.attribution))
+        try container.encode(
+            "https://weatherkit.apple.com/legal-attribution.html",
+            forKey: .attribute(.attributionLink))
     }
 
     public init(from decoder: Decoder) throws {
@@ -107,6 +115,8 @@ extension WeatherConditions: Codable {
         }
 
         // Decode properties
+        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
+
         let tempValue = try container.decode(
             QuantitativeValue.self, forKey: .attribute(.temperature))
         guard let temp = tempValue.measurement(as: UnitTemperature.self) else {
@@ -153,7 +163,5 @@ extension WeatherConditions: Codable {
         ) {
             precipitationChance = precipChance.value / 100.0
         }
-
-        dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value
     }
 }

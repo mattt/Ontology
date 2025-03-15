@@ -7,14 +7,15 @@ import Testing
 struct WeatherConditionsTests {
     @Test("Basic initialization works correctly")
     func testBasicInitialization() {
+        let date = Date()
         let conditions = WeatherConditions(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: Date()
+            precipitationChance: 0.3
         )
 
         #expect(conditions.temperature.value == 20)
@@ -30,13 +31,13 @@ struct WeatherConditionsTests {
     func testJSONLDEncoding() throws {
         let date = Date()
         let conditions = WeatherConditions(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: date
+            precipitationChance: 0.3
         )
 
         let encoder = JSONEncoder()
@@ -72,13 +73,13 @@ struct WeatherConditionsTests {
     func testJSONLDRoundTrip() throws {
         let date = Date()
         let original = WeatherConditions(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: 0.3,
-            dateTime: date
+            precipitationChance: 0.3
         )
 
         let encoder = JSONEncoder()
@@ -98,14 +99,15 @@ struct WeatherConditionsTests {
 
     @Test("Optional precipitationChance handles nil correctly")
     func testOptionalPrecipitationChance() throws {
+        let date = Date()
         let conditions = WeatherConditions(
+            dateTime: date,
             temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
             apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
             windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
             humidity: 0.65,
             condition: "Partly Cloudy",
-            precipitationChance: nil,
-            dateTime: Date()
+            precipitationChance: nil
         )
 
         let encoder = JSONEncoder()

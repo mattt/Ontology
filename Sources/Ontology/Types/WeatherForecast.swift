@@ -173,6 +173,8 @@ extension WeatherForecast: Codable {
         case uvIndex, sunRiseTime, sunSetTime, moonPhase, moonriseTime, moonsetTime, isDaylight
         // Pressure
         case pressure, pressureTrend
+        // Add attribution keys
+        case provider, attribution, attributionLink
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -288,6 +290,14 @@ extension WeatherForecast: Codable {
             try container.encode(QuantitativeValue(pressure), forKey: .attribute(.pressure))
         }
         try container.encodeIfPresent(pressureTrend, forKey: .attribute(.pressureTrend))
+
+        // Add required WeatherKit attribution
+        try container.encode("Apple Weather", forKey: .attribute(.provider))
+        try container.encode(
+            "Weather data provided by Apple Weather", forKey: .attribute(.attribution))
+        try container.encode(
+            "https://weatherkit.apple.com/legal-attribution.html",
+            forKey: .attribute(.attributionLink))
     }
 
     public init(from decoder: Decoder) throws {
