@@ -21,7 +21,7 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/loopwork-ai/ontology.git", from: "0.3.1")
+    .package(url: "https://github.com/loopwork-ai/ontology.git", from: "0.4.0")
 ]
 ```
 
