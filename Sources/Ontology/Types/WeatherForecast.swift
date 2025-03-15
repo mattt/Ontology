@@ -120,10 +120,12 @@ public struct WeatherForecast: Hashable, Sendable {
             self.windSpeed = forecast.wind.speed
             self.lowTemperature = forecast.lowTemperature
             self.highTemperature = forecast.highTemperature
-            if #available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
-                self.minimumHumidity = forecast.minimumHumidity
-                self.maximumHumidity = forecast.minimumHumidity
-            }
+            
+            // FIXME: error: value of type 'DayWeather' has no member 'minimumHumidity'
+            // if #available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
+            //     self.minimumHumidity = forecast.minimumHumidity
+            //     self.maximumHumidity = forecast.maximumHumidity
+            // }
             self.precipitationChance = forecast.precipitationChance
             self.condition = forecast.condition.description
             self.uvIndex = forecast.uvIndex.value
