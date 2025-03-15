@@ -1,5 +1,6 @@
 import Foundation
 
+/// A structured value representing weather conditions.
 public struct WeatherConditions: Hashable, Sendable {
     /// The temperature in Celsius
     public var temperature: Measurement<UnitTemperature>
@@ -28,6 +29,7 @@ public struct WeatherConditions: Hashable, Sendable {
 #if canImport(WeatherKit)
     import WeatherKit
     extension WeatherConditions {
+        /// Initialize weather conditions from a CurrentWeather instance
         public init(_ current: CurrentWeather) {
             self.temperature = current.temperature
             self.apparentTemperature = current.apparentTemperature

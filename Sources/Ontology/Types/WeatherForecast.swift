@@ -1,6 +1,6 @@
 import Foundation
 
-/// A weather forecast.
+/// A structured value representing a weather forecast.
 public struct WeatherForecast: Hashable, Sendable {
     /// The date and time of the forecast
     public var dateTime: Date
@@ -114,6 +114,7 @@ public struct WeatherForecast: Hashable, Sendable {
     import WeatherKit
 
     extension WeatherForecast {
+        /// Initialize a weather forecast from a DayWeather instance
         public init(_ forecast: DayWeather) {
             self.dateTime = forecast.date
             self.windSpeed = forecast.wind.speed
@@ -129,6 +130,7 @@ public struct WeatherForecast: Hashable, Sendable {
             self.precipitationAmount = forecast.precipitationAmount
         }
 
+        /// Initialize a weather forecast from an HourWeather instance
         public init(_ forecast: HourWeather) {
             self.dateTime = forecast.date
             self.temperature = forecast.temperature
@@ -141,6 +143,7 @@ public struct WeatherForecast: Hashable, Sendable {
             self.uvIndex = forecast.uvIndex.value
         }
 
+        /// Initialize a weather forecast from a MinuteWeather instance
         public init(_ forecast: MinuteWeather) {
             self.dateTime = forecast.date
             self.precipitation = forecast.precipitation.description
