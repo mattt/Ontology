@@ -1,5 +1,3 @@
-import Foundation
-
 /// A structured value representing a measurement following schema.org/QuantitativeValue
 public struct QuantitativeValue: Hashable, Sendable {
     /// The numeric value
@@ -19,6 +17,17 @@ public struct QuantitativeValue: Hashable, Sendable {
         self.value = value
         self.unitCode = unitCode
         self.unitText = unitText
+    }
+
+    /// Create a percentage value from a double.
+    ///
+    /// The value is from 0 (0% probability) to 1 (100% probability)
+    public static func percentage(_ value: Double) -> QuantitativeValue {
+        QuantitativeValue(
+            value: value * 100,
+            unitCode: "P1",  // UN/CEFACT code for percentage
+            unitText: "%"
+        )
     }
 }
 
@@ -62,100 +71,84 @@ extension QuantitativeValue: Codable {
     }
 }
 
-// Measurement conversion
-extension QuantitativeValue {
-    /// Initialize from a Foundation.Measurement
-    public init<UnitType: Unit>(_ measurement: Measurement<UnitType>) where UnitType: Dimension {
-        let baseUnit: UnitType
-        let (unitCode, unitText) = Self.unCefactCode(for: UnitType.self)
+#if canImport(Foundation)
+    import Foundation
 
-        switch UnitType.self {
-        case is UnitTemperature.Type:
-            // Special handling for temperature - keep in Celsius
-            let celsiusValue = measurement.converted(to: UnitTemperature.celsius as! UnitType)
-            self.init(
-                value: celsiusValue.value,
-                unitCode: unitCode,
-                unitText: unitText
-            )
-            return
-
-        case is UnitSpeed.Type:
-            baseUnit = UnitSpeed.kilometersPerHour as! UnitType
-        case is UnitMass.Type:
-            baseUnit = UnitMass.kilograms as! UnitType
-        case is UnitLength.Type:
-            baseUnit = UnitLength.meters as! UnitType
-        default:
-            // For unsupported types, just store the raw value
-            self.init(
-                value: measurement.value,
-                unitCode: String(describing: measurement.unit),
-                unitText: measurement.unit.symbol
-            )
-            return
+    // Measurement conversion
+    extension QuantitativeValue {
+        private static func unCefactMapping<UnitType: Dimension>(for type: UnitType.Type) -> (
+            code: String, text: String, baseUnit: UnitType
+        )? {
+            switch type {
+            case is UnitAcceleration.Type:
+                return ("MSK", "m/s²", UnitAcceleration.metersPerSecondSquared as! UnitType)
+            case is UnitAngle.Type:
+                return ("DEG", "°", UnitAngle.degrees as! UnitType)
+            case is UnitArea.Type:
+                return ("MTK", "m²", UnitArea.squareMeters as! UnitType)
+            case is UnitConcentrationMass.Type:
+                return ("KMQ", "kg/m³", UnitConcentrationMass.gramsPerLiter as! UnitType)
+            case is UnitDuration.Type:
+                return ("SEC", "s", UnitDuration.seconds as! UnitType)
+            case is UnitElectricCurrent.Type:
+                return ("AMP", "A", UnitElectricCurrent.amperes as! UnitType)
+            case is UnitElectricPotentialDifference.Type:
+                return ("VLT", "V", UnitElectricPotentialDifference.volts as! UnitType)
+            case is UnitEnergy.Type:
+                return ("JOU", "J", UnitEnergy.joules as! UnitType)
+            case is UnitFrequency.Type:
+                return ("HTZ", "Hz", UnitFrequency.hertz as! UnitType)
+            case is UnitIlluminance.Type:
+                return ("LUX", "lx", UnitIlluminance.lux as! UnitType)
+            case is UnitLength.Type:
+                return ("MTR", "m", UnitLength.meters as! UnitType)
+            case is UnitMass.Type:
+                return ("KGM", "kg", UnitMass.kilograms as! UnitType)
+            case is UnitPower.Type:
+                return ("WTT", "W", UnitPower.watts as! UnitType)
+            case is UnitPressure.Type:
+                return ("KPA", "kPa", UnitPressure.kilopascals as! UnitType)
+            case is UnitSpeed.Type:
+                return ("MTS", "m/s", UnitSpeed.metersPerSecond as! UnitType)
+            case is UnitTemperature.Type:
+                return ("CEL", "°C", UnitTemperature.celsius as! UnitType)
+            case is UnitVolume.Type:
+                return ("MTQ", "m³", UnitVolume.cubicMeters as! UnitType)
+            default:
+                return nil
+            }
         }
 
-        let convertedMeasurement = measurement.converted(to: baseUnit)
-        self.init(
-            value: convertedMeasurement.value,
-            unitCode: unitCode,
-            unitText: unitText
-        )
-    }
+        /// Initialize from a Foundation.Measurement
+        public init<UnitType: Unit>(_ measurement: Measurement<UnitType>)
+        where UnitType: Dimension {
+            if let mapping = Self.unCefactMapping(for: UnitType.self) {
+                let standardized = measurement.converted(to: mapping.baseUnit)
+                self.init(
+                    value: standardized.value,
+                    unitCode: mapping.code,
+                    unitText: mapping.text
+                )
+            } else {
+                // Fallback for non-UN/CEFACT units
+                self.init(
+                    value: measurement.value,
+                    unitCode: "",
+                    unitText: measurement.unit.symbol
+                )
+            }
+        }
 
-    /// Convert to a Foundation.Measurement
-    public func measurement<UnitType: Unit>(as unitType: UnitType.Type) -> Measurement<UnitType>? {
-        // First verify the unitCode matches the expected type
-        let expectedCode = Self.unCefactCode(for: unitType).code
-        guard unitCode == expectedCode else { return nil }
-
-        guard let baseUnit = Self.baseUnit(for: unitType) as? UnitType else { return nil }
-        return Measurement(value: value, unit: baseUnit)
-    }
-
-    // Helper to map unit types to UN/CEFACT codes
-    private static func unCefactCode<UnitType: Unit>(for type: UnitType.Type) -> (
-        code: String, text: String
-    ) {
-        switch type {
-        case is UnitTemperature.Type:
-            return ("CEL", "°C")
-        case is UnitSpeed.Type:
-            return ("KMH", "km/h")
-        case is UnitMass.Type:
-            return ("KGM", "kg")
-        case is UnitLength.Type:
-            return ("MTR", "m")
-        default:
-            return (String(describing: type), "")
+        /// Convert to a Foundation.Measurement
+        public func measurement<UnitType: Dimension>(as unitType: UnitType.Type)
+            -> Measurement<UnitType>?
+        {
+            guard let mapping = Self.unCefactMapping(for: unitType),
+                mapping.code == self.unitCode
+            else {
+                return nil
+            }
+            return Measurement(value: value, unit: mapping.baseUnit)
         }
     }
-
-    // Helper to get base unit for a given unit type
-    private static func baseUnit<UnitType: Unit>(for type: UnitType.Type) -> Unit? {
-        switch type {
-        case is UnitTemperature.Type:
-            return UnitTemperature.celsius
-        case is UnitSpeed.Type:
-            return UnitSpeed.kilometersPerHour
-        case is UnitMass.Type:
-            return UnitMass.kilograms
-        case is UnitLength.Type:
-            return UnitLength.meters
-        default:
-            return nil
-        }
-    }
-
-    /// Create a percentage value from a double.
-    ///
-    /// The value is from 0 (0% probability) to 1 (100% probability)
-    public static func percentage(_ value: Double) -> QuantitativeValue {
-        QuantitativeValue(
-            value: value * 100,
-            unitCode: "P1",  // UN/CEFACT code for percentage
-            unitText: "%"
-        )
-    }
-}
+#endif

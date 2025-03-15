@@ -73,6 +73,9 @@ public struct WeatherForecast: Hashable, Sendable {
     /// The value is from 0 (0% cloud cover) to 1 (100% cloud cover)
     public var cloudCover: Double?
 
+    /// The visibility distance
+    public var visibility: Measurement<UnitLength>?
+
     // TODO: Add cloud cover by altitude levels
 
     // MARK: Sun and Moon
@@ -105,9 +108,6 @@ public struct WeatherForecast: Hashable, Sendable {
 
     /// The pressure trend (rising, falling, steady)
     public var pressureTrend: String?
-
-    /// The visibility distance
-    public var visibility: Measurement<UnitLength>?
 }
 
 #if canImport(WeatherKit)
@@ -164,12 +164,12 @@ extension WeatherForecast: Codable {
         case windSpeed, windDirection
         // Precipitation
         case condition, precipitation, precipitationChance, precipitationIntensity,
-            precipitationAmount
+            precipitationAmount, visibility
         case cloudCover
         // Sun and Moon
         case uvIndex, sunRiseTime, sunSetTime, moonPhase, moonriseTime, moonsetTime, isDaylight
         // Pressure
-        case pressure, pressureTrend, visibility
+        case pressure, pressureTrend
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -259,6 +259,9 @@ extension WeatherForecast: Codable {
             try container.encode(
                 QuantitativeValue.percentage(cloudCover), forKey: .attribute(.cloudCover))
         }
+        if let visibility = visibility {
+            try container.encode(QuantitativeValue(visibility), forKey: .attribute(.visibility))
+        }
 
         // Sun and Moon
         try container.encodeIfPresent(uvIndex, forKey: .attribute(.uvIndex))
@@ -277,14 +280,11 @@ extension WeatherForecast: Codable {
         }
         try container.encodeIfPresent(isDaylight, forKey: .attribute(.isDaylight))
 
-        // Pressure and Visibility
+        // Pressure
         if let pressure = pressure {
             try container.encode(QuantitativeValue(pressure), forKey: .attribute(.pressure))
         }
         try container.encodeIfPresent(pressureTrend, forKey: .attribute(.pressureTrend))
-        if let visibility = visibility {
-            try container.encode(QuantitativeValue(visibility), forKey: .attribute(.visibility))
-        }
     }
 
     public init(from decoder: Decoder) throws {
@@ -389,6 +389,11 @@ extension WeatherForecast: Codable {
         {
             cloudCover = value.value / 100.0
         }
+        if let value = try container.decodeIfPresent(
+            QuantitativeValue.self, forKey: .attribute(.visibility))
+        {
+            visibility = value.measurement(as: UnitLength.self)
+        }
 
         // Sun and Moon
         uvIndex = try container.decodeIfPresent(Int.self, forKey: .attribute(.uvIndex))
@@ -411,10 +416,5 @@ extension WeatherForecast: Codable {
         }
         pressureTrend = try container.decodeIfPresent(
             String.self, forKey: .attribute(.pressureTrend))
-        if let value = try container.decodeIfPresent(
-            QuantitativeValue.self, forKey: .attribute(.visibility))
-        {
-            visibility = value.measurement(as: UnitLength.self)
-        }
     }
 }
