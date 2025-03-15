@@ -105,6 +105,11 @@ contact.emailAddresses = [
 let person = Person(contact)
 ```
 
+## Legal
+
+Apple Weather and Weather are trademarks of Apple Inc.
+This project is not affiliated with, endorsed, or sponsored by Apple Inc.
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0.
