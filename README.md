@@ -41,14 +41,16 @@ Supported Schema.org types and their Apple framework equivalents:
 | [Person](https://schema.org/Person) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents a person with properties like name, contact info, and relationships |
 | [PlanAction](https://schema.org/PlanAction) | [EKReminder](https://developer.apple.com/documentation/eventkit/ekreminder) | Represents a planned action or task with properties like name, description, due date, and completion status |
 | [PostalAddress](https://schema.org/PostalAddress) | [CNPostalAddress](https://developer.apple.com/documentation/contacts/cnpostaladdress) | Represents a physical address with street, city, region, etc. |
+| [QuantitativeValue](https://schema.org/QuantitativeValue) | [Measurement](https://developer.apple.com/documentation/foundation/measurement) | Represents measurements with standardized units using UN/CEFACT Common Codes |
 
-### Weather.gov API Vocabulary
+### Apple WeatherKit Vocabulary
 
-Additional types supporting the [National Weather Service API][nws-api]:
+Additional types supporting [Apple WeatherKit][weatherkit]:
 
-| Weather.gov Type | Description |
-|-----------------|-------------|
-| WeatherForecast | Represents detailed weather forecast data including temperature, precipitation probability, and wind information |
+| Type | WeatherKit Type | Description |
+|------|----------------|-------------|
+| WeatherForecast | [DayWeather](https://developer.apple.com/documentation/weatherkit/dayweather), [HourWeather](https://developer.apple.com/documentation/weatherkit/hourweather), [MinuteWeather](https://developer.apple.com/documentation/weatherkit/minuteweather) | Detailed weather forecast including temperature, precipitation, wind, sun/moon data |
+| WeatherConditions | [CurrentWeather](https://developer.apple.com/documentation/weatherkit/currentweather), [HourWeather](https://developer.apple.com/documentation/weatherkit/hourweather) | Current or hourly weather conditions including temperature, wind, and humidity |
 
 ## Usage
 
@@ -103,6 +105,11 @@ contact.emailAddresses = [
 let person = Person(contact)
 ```
 
+## Legal
+
+Apple Weather and Weather are trademarks of Apple Inc.
+This project is not affiliated with, endorsed, or sponsored by Apple Inc.
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0.
@@ -112,3 +119,4 @@ This project is licensed under the Apache License, Version 2.0.
 [nws-api]: https://weather.gov
 [framework-contacts]: https://developer.apple.com/documentation/contacts/
 [framework-eventkit]: https://developer.apple.com/documentation/eventkit
+[weatherkit]: https://developer.apple.com/weatherkit/
