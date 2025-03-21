@@ -105,6 +105,40 @@ contact.emailAddresses = [
 let person = Person(contact)
 ```
 
+### Configuring DateTime representations
+
+By default, `DateTime` objects are encoded with their specified time zone,
+or GMT/UTC if none is specified.
+You can override the time zone used during encoding by providing 
+a specific `TimeZone` in the `JSONEncoder`'s `userInfo` dictionary:
+
+```swift
+import Ontology
+
+// Create a DateTime object
+let dateTime = DateTime(Date())
+
+// Create an encoder that will use the local timezone
+let encoder = JSONEncoder()
+encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone.current
+
+// Or specify a particular timezone
+// encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone(identifier: "America/New_York")
+
+// Encode using the specified timezone
+let jsonData = try encoder.encode(dateTime)
+```
+
+This feature is particularly useful when:
+- Working with date-only values that should be interpreted in the user's local timezone
+- Ensuring consistent timezone representation across different data sources
+- Presenting dates to users in their local timezone regardless of how they were originally stored
+
+So to recap, the date encoding priority is:
+1. `TimeZone` from encoder's `userInfo` (if provided)
+2. `TimeZone` from the `DateTime` object (if specified)
+3. GMT/UTC (default fallback)
+
 ## Legal
 
 Apple Weather and Weather are trademarks of Apple Inc.

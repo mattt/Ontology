@@ -21,7 +21,28 @@ public struct DateTime: Hashable, Sendable {
 extension DateTime: Codable {
     private enum CodingKeys: String, CodingKey {
         case value
+        case timeZone
     }
+
+    /// A user info key that allows overriding the TimeZone used when encoding DateTime values.
+    ///
+    /// When encoding a DateTime, the TimeZone is determined in the following priority order:
+    /// 1. TimeZone from encoder.userInfo[DateTime.timeZoneOverrideKey] (if provided)
+    /// 2. TimeZone from the DateTime instance (if specified)
+    /// 3. GMT/UTC (default fallback)
+    ///
+    /// This is particularly useful for ensuring dates are interpreted correctly across different
+    /// time zones, or when you want to present all dates in a specific time zone regardless
+    /// of how they were originally stored.
+    ///
+    /// Example usage:
+    /// ```
+    /// let encoder = JSONEncoder()
+    /// encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone.current
+    /// let encodedData = try encoder.encode(myDateTime)
+    /// ```
+    public static let timeZoneOverrideKey = CodingUserInfoKey(
+        rawValue: "com.loopwork.Ontology.DateTimeEncodingTimeZone")!
 
     public init(from decoder: Decoder) throws {
         do {
@@ -56,11 +77,16 @@ extension DateTime: Codable {
     public func encode(to encoder: Encoder) throws {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let timeZone = timeZone {
+
+        // Check if a TimeZone was provided in userInfo
+        if let userInfoTimeZone = encoder.userInfo[DateTime.timeZoneOverrideKey] as? TimeZone {
+            formatter.timeZone = userInfoTimeZone
+        } else if let timeZone = timeZone {
             formatter.timeZone = timeZone
         } else {
             formatter.timeZone = .gmt
         }
+
         let string = formatter.string(from: value)
 
         // Check if we're being encoded as part of a JSON-LD document
