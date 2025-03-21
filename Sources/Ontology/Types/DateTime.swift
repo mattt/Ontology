@@ -25,7 +25,7 @@ extension DateTime: Codable {
     }
 
     /// UserInfo key for specifying a TimeZone to use when encoding DateTime values
-    public static let encodingTimeZoneKey = CodingUserInfoKey(
+    public static let timeZoneOverrideKey = CodingUserInfoKey(
         rawValue: "com.loopwork.Ontology.DateTimeEncodingTimeZone")!
 
     public init(from decoder: Decoder) throws {
@@ -63,7 +63,7 @@ extension DateTime: Codable {
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
         // Check if a TimeZone was provided in userInfo
-        if let userInfoTimeZone = encoder.userInfo[DateTime.encodingTimeZoneKey] as? TimeZone {
+        if let userInfoTimeZone = encoder.userInfo[DateTime.timeZoneOverrideKey] as? TimeZone {
             formatter.timeZone = userInfoTimeZone
         } else if let timeZone = timeZone {
             formatter.timeZone = timeZone

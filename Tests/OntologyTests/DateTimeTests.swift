@@ -111,7 +111,7 @@ struct DateTimeTests {
         // Create encoder with a different timezone in userInfo (New York)
         let encoder = JSONEncoder()
         let newYorkTimeZone = TimeZone(secondsFromGMT: -5 * 3600)!  // -05:00 (New York)
-        encoder.userInfo[DateTime.encodingTimeZoneKey] = newYorkTimeZone
+        encoder.userInfo[DateTime.timeZoneOverrideKey] = newYorkTimeZone
 
         // Encode the DateTime
         let encoded = try encoder.encode(dateTime)

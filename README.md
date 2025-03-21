@@ -120,10 +120,10 @@ let dateTime = DateTime(Date())
 
 // Create an encoder that will use the local timezone
 let encoder = JSONEncoder()
-encoder.userInfo[DateTime.encodingTimeZoneKey] = TimeZone.current
+encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone.current
 
 // Or specify a particular timezone
-// encoder.userInfo[DateTime.encodingTimeZoneKey] = TimeZone(identifier: "America/New_York")
+// encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone(identifier: "America/New_York")
 
 // Encode using the specified timezone
 let jsonData = try encoder.encode(dateTime)
