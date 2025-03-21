@@ -101,4 +101,42 @@ struct DateTimeTests {
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
         #expect(finalString.contains("2025-01-01T00:00:00.000-08:00"))
     }
+
+    @Test("DateTime encoding respects TimeZone from encoder's userInfo")
+    func testUserInfoTimeZone() throws {
+        // Create a DateTime with UTC timezone
+        let date = Date(timeIntervalSince1970: 0)  // 1970-01-01T00:00:00Z
+        let dateTime = DateTime(date, timeZone: .gmt)
+
+        // Create encoder with a different timezone in userInfo (New York)
+        let encoder = JSONEncoder()
+        let newYorkTimeZone = TimeZone(secondsFromGMT: -5 * 3600)!  // -05:00 (New York)
+        encoder.userInfo[DateTime.encodingTimeZoneKey] = newYorkTimeZone
+
+        // Encode the DateTime
+        let encoded = try encoder.encode(dateTime)
+        let jsonString = String(data: encoded, encoding: .utf8)!
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+
+        // Verify it used the TimeZone from userInfo, not the one from dateTime
+        #expect(jsonString.contains("1969-12-31T19:00:00.000-05:00"))
+
+        // Test with a JSON-LD encoding
+        let jsonLDDateTime = DateTime(date)
+        let jsonLDData = try encoder.encode(jsonLDDateTime)
+        let json = try JSONSerialization.jsonObject(with: jsonLDData) as! [String: Any]
+
+        // Verify the TimeZone from userInfo was used
+        let value = json["value"] as! String
+        #expect(value.contains("1969-12-31T19:00:00.000-05:00"))
+
+        // Verify userInfo TimeZone takes precedence over DateTime's TimeZone
+        let tokyoDateTime = DateTime(date, timeZone: TimeZone(secondsFromGMT: 9 * 3600))
+        let tokyoEncoded = try encoder.encode(tokyoDateTime)
+        let tokyoString = String(data: tokyoEncoded, encoding: .utf8)!
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+
+        // Should still use New York time from userInfo, not Tokyo time
+        #expect(tokyoString.contains("1969-12-31T19:00:00.000-05:00"))
+    }
 }
