@@ -24,7 +24,23 @@ extension DateTime: Codable {
         case timeZone
     }
 
-    /// UserInfo key for specifying a TimeZone to use when encoding DateTime values
+    /// A user info key that allows overriding the TimeZone used when encoding DateTime values.
+    ///
+    /// When encoding a DateTime, the TimeZone is determined in the following priority order:
+    /// 1. TimeZone from encoder.userInfo[DateTime.timeZoneOverrideKey] (if provided)
+    /// 2. TimeZone from the DateTime instance (if specified)
+    /// 3. GMT/UTC (default fallback)
+    ///
+    /// This is particularly useful for ensuring dates are interpreted correctly across different
+    /// time zones, or when you want to present all dates in a specific time zone regardless
+    /// of how they were originally stored.
+    ///
+    /// Example usage:
+    /// ```
+    /// let encoder = JSONEncoder()
+    /// encoder.userInfo[DateTime.timeZoneOverrideKey] = TimeZone.current
+    /// let encodedData = try encoder.encode(myDateTime)
+    /// ```
     public static let timeZoneOverrideKey = CodingUserInfoKey(
         rawValue: "com.loopwork.Ontology.DateTimeEncodingTimeZone")!
 
