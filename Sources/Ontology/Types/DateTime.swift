@@ -21,7 +21,12 @@ public struct DateTime: Hashable, Sendable {
 extension DateTime: Codable {
     private enum CodingKeys: String, CodingKey {
         case value
+        case timeZone
     }
+
+    /// UserInfo key for specifying a TimeZone to use when encoding DateTime values
+    public static let encodingTimeZoneKey = CodingUserInfoKey(
+        rawValue: "com.loopwork.Ontology.DateTimeEncodingTimeZone")!
 
     public init(from decoder: Decoder) throws {
         do {
@@ -56,11 +61,16 @@ extension DateTime: Codable {
     public func encode(to encoder: Encoder) throws {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let timeZone = timeZone {
+
+        // Check if a TimeZone was provided in userInfo
+        if let userInfoTimeZone = encoder.userInfo[DateTime.encodingTimeZoneKey] as? TimeZone {
+            formatter.timeZone = userInfoTimeZone
+        } else if let timeZone = timeZone {
             formatter.timeZone = timeZone
         } else {
             formatter.timeZone = .gmt
         }
+
         let string = formatter.string(from: value)
 
         // Check if we're being encoded as part of a JSON-LD document
