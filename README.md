@@ -39,9 +39,11 @@ Supported Schema.org types and their Apple framework equivalents:
 | [GeoCoordinates](https://schema.org/GeoCoordinates) | [CLLocation](https://developer.apple.com/documentation/corelocation/cllocation) | Represents geographic coordinates with latitude, longitude, and optional elevation |
 | [Organization](https://schema.org/Organization) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents an organization with properties like name and contact info |
 | [Person](https://schema.org/Person) | [CNContact](https://developer.apple.com/documentation/contacts/cncontact) | Represents a person with properties like name, contact info, and relationships |
+| [Place](https://schema.org/Place) | [MKPlacemark](https://developer.apple.com/documentation/mapkit/mkplacemark), [MKMapItem](https://developer.apple.com/documentation/mapkit/mkmapitem) | Represents a geographical location, specific address, or point of interest |
 | [PlanAction](https://schema.org/PlanAction) | [EKReminder](https://developer.apple.com/documentation/eventkit/ekreminder) | Represents a planned action or task with properties like name, description, due date, and completion status |
 | [PostalAddress](https://schema.org/PostalAddress) | [CNPostalAddress](https://developer.apple.com/documentation/contacts/cnpostaladdress) | Represents a physical address with street, city, region, etc. |
 | [QuantitativeValue](https://schema.org/QuantitativeValue) | [Measurement](https://developer.apple.com/documentation/foundation/measurement) | Represents measurements with standardized units using UN/CEFACT Common Codes |
+| [Trip](https://schema.org/Trip) | [MKDirections.Response](https://developer.apple.com/documentation/mapkit/mkdirections/response), [MKDirections.ETAResponse](https://developer.apple.com/documentation/mapkit/mkdirections/etaresponse) | Represents an itinerary of visits to one or more places with optional arrival/departure times |
 
 ### Apple WeatherKit Vocabulary
 
