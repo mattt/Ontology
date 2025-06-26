@@ -6,6 +6,9 @@ public struct Event: Hashable, Sendable {
     /// The name/title of the event
     public var name: String?
 
+    /// The calendar this event belongs to
+    public var calendar: String?
+
     /// Start date and time of the event in ISO 8601 format
     public var startDate: DateTime?
 
@@ -44,6 +47,7 @@ public struct Event: Hashable, Sendable {
         /// Initialize an Event with an EventKit event
         public init(_ event: EKEvent) {
             self.name = event.title
+            self.calendar = event.calendar?.title
             self.startDate = DateTime(event.startDate, timeZone: event.timeZone)
             self.endDate = DateTime(event.endDate, timeZone: event.timeZone)
             self.location = event.location
@@ -54,7 +58,7 @@ public struct Event: Hashable, Sendable {
 
 extension Event: Codable {
     private enum CodingKeys: String, CodingKey {
-        case name, startDate, endDate, location, url
+        case name, startDate, endDate, location, url, calendar
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -73,6 +77,7 @@ extension Event: Codable {
 
         // Encode properties
         try container.encodeIfPresent(name, forKey: .attribute(.name))
+        try container.encodeIfPresent(calendar, forKey: .attribute(.calendar))
         try container.encodeIfPresent(startDate, forKey: .attribute(.startDate))
         try container.encodeIfPresent(endDate, forKey: .attribute(.endDate))
         try container.encodeIfPresent(location, forKey: .attribute(.location))
@@ -98,6 +103,7 @@ extension Event: Codable {
 
         // Decode properties
         name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
+        calendar = try container.decodeIfPresent(String.self, forKey: .attribute(.calendar))
         startDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.startDate))
         endDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.endDate))
         location = try container.decodeIfPresent(String.self, forKey: .attribute(.location))
