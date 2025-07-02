@@ -47,7 +47,7 @@ public struct Person: Hashable, Sendable {
     public var relatedTo: [Person]?
 
     /// Initialize a Person with just a name
-    init(name: String) {
+    public init(name: String) {
         let formatter = PersonNameComponentsFormatter()
         if let components = formatter.personNameComponents(from: name) {
             self.givenName = components.givenName
