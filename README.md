@@ -2,9 +2,9 @@
 
 A Swift library for working with structured data.
 This library provides [JSON-LD][json-ld] serializable types
-that can represent entities from various vocabularies, 
-with a focus on [Schema.org][schema.org]. 
-It includes convenience initializers for types from Apple frameworks, like 
+that can represent entities from various vocabularies,
+with a focus on [Schema.org][schema.org].
+It includes convenience initializers for types from Apple frameworks, like
 [Contacts][framework-contacts] and [EventKit][framework-eventkit].
 
 ## Requirements
@@ -99,7 +99,7 @@ let contact = CNMutableContact()
 contact.givenName = "Jane"
 contact.familyName = "Smith"
 contact.emailAddresses = [
-    CNLabeledValue(label: CNLabelHome, 
+    CNLabeledValue(label: CNLabelHome,
                    value: "jane.smith@example.com" as NSString)
 ]
 
@@ -111,7 +111,7 @@ let person = Person(contact)
 
 By default, `DateTime` objects are encoded with their specified time zone,
 or GMT/UTC if none is specified.
-You can override the time zone used during encoding by providing 
+You can override the time zone used during encoding by providing
 a specific `TimeZone` in the `JSONEncoder`'s `userInfo` dictionary:
 
 ```swift
