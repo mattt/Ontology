@@ -1,5 +1,5 @@
 /// A Person model following Schema.org ontology (https://schema.org/Person)
-public struct Person {
+public struct Person: Hashable, Sendable {
     /// Unique identifier for the person
     public var identifier: String?
 
