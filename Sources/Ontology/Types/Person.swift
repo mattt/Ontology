@@ -1,5 +1,5 @@
 /// A Person model following Schema.org ontology (https://schema.org/Person)
-public struct Person {
+public struct Person: Hashable, Sendable {
     /// Unique identifier for the person
     public var identifier: String?
 
@@ -47,7 +47,7 @@ public struct Person {
     public var relatedTo: [Person]?
 
     /// Initialize a Person with just a name
-    init(name: String) {
+    public init(name: String) {
         let formatter = PersonNameComponentsFormatter()
         if let components = formatter.personNameComponents(from: name) {
             self.givenName = components.givenName
