@@ -141,14 +141,15 @@ So to recap, the date encoding priority is:
 2. `TimeZone` from the `DateTime` object (if specified)
 3. GMT/UTC (default fallback)
 
+## License
+
+This project is available under the MIT license.
+See the LICENSE file for more info.
+
 ## Legal
 
 Apple Weather and Weather are trademarks of Apple Inc.
 This project is not affiliated with, endorsed, or sponsored by Apple Inc.
-
-## License
-
-This project is licensed under the Apache License, Version 2.0.
 
 [schema.org]: https://schema.org
 [json-ld]: https://json-ld.org
