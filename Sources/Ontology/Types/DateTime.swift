@@ -42,7 +42,7 @@ extension DateTime: Codable {
     /// let encodedData = try encoder.encode(myDateTime)
     /// ```
     public static let timeZoneOverrideKey = CodingUserInfoKey(
-        rawValue: "com.loopwork.Ontology.DateTimeEncodingTimeZone")!
+        rawValue: "me.mattt.Ontology.DateTimeEncodingTimeZone")!
 
     public init(from decoder: Decoder) throws {
         do {
