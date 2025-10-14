@@ -2,27 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
-    runs-on: macos-latest
-
+    name: Swift ${{ matrix.swift }} on Xcode ${{ matrix.xcode }}
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      DEVELOPER_DIR: "/Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer"
     strategy:
+      fail-fast: false
       matrix:
-        swift-version:
-          - ^6
-
-    name: Build and Test (Swift ${{ matrix.swift-version }})
+        include:
+          - swift: "6.0"
+            xcode: "16.0"
+            runs-on: macos-15
+          - swift: "6.1"
+            xcode: "16.3"
+            runs-on: macos-15
+          - swift: "6.2"
+            xcode: "26.0"
+            runs-on: macos-26
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: ${{ matrix.swift-version }}
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build -v
+
+      - name: Test
+        run: swift test -v
