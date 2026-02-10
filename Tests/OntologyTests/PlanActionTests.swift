@@ -1,3 +1,4 @@
+import EventKit
 import Foundation
 import Testing
 
@@ -126,5 +127,21 @@ struct PlanActionTests {
         #expect(planAction1 == planAction2)
         #expect(planAction1 != planAction3)
         #expect(planAction1.hashValue == planAction2.hashValue)
+    }
+
+    @Test("PlanAction initialization from EKReminder preserves identifier")
+    func testEKReminderIdentifier() throws {
+        let eventStore = EKEventStore()
+        let reminder = EKReminder(eventStore: eventStore)
+
+        reminder.title = "Test Reminder"
+        reminder.notes = "Test notes"
+
+        let planAction = PlanAction(reminder)
+
+        // The calendarItemIdentifier is set by EventKit when the reminder is created
+        #expect(planAction.identifier == reminder.calendarItemIdentifier)
+        #expect(planAction.name == "Test Reminder")
+        #expect(planAction.description == "Test notes")
     }
 }
