@@ -6,6 +6,9 @@ public struct Event: Hashable, Sendable {
     /// The name/title of the event
     public var name: String?
 
+    /// Description of the event
+    public var description: String?
+
     /// The calendar this event belongs to
     public var calendar: String?
 
@@ -47,6 +50,7 @@ public struct Event: Hashable, Sendable {
         /// Initialize an Event with an EventKit event
         public init(_ event: EKEvent) {
             self.name = event.title
+            self.description = event.notes
             self.calendar = event.calendar?.title
             self.startDate = DateTime(event.startDate, timeZone: event.timeZone)
             self.endDate = DateTime(event.endDate, timeZone: event.timeZone)
@@ -58,7 +62,7 @@ public struct Event: Hashable, Sendable {
 
 extension Event: Codable {
     private enum CodingKeys: String, CodingKey {
-        case name, startDate, endDate, location, url, calendar
+        case name, description, startDate, endDate, location, url, calendar
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -77,6 +81,7 @@ extension Event: Codable {
 
         // Encode properties
         try container.encodeIfPresent(name, forKey: .attribute(.name))
+        try container.encodeIfPresent(description, forKey: .attribute(.description))
         try container.encodeIfPresent(calendar, forKey: .attribute(.calendar))
         try container.encodeIfPresent(startDate, forKey: .attribute(.startDate))
         try container.encodeIfPresent(endDate, forKey: .attribute(.endDate))
@@ -103,6 +108,7 @@ extension Event: Codable {
 
         // Decode properties
         name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
+        description = try container.decodeIfPresent(String.self, forKey: .attribute(.description))
         calendar = try container.decodeIfPresent(String.self, forKey: .attribute(.calendar))
         startDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.startDate))
         endDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.endDate))
