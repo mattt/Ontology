@@ -198,6 +198,37 @@ public struct Person: Hashable, Sendable {
     }
 #endif
 
+#if canImport(EventKit)
+    import EventKit
+
+    extension Person {
+        /// Initialize a Person from an EventKit event participant.
+        ///
+        /// The participant's display name is split into given and family names,
+        /// which is imperfect for some names.
+        /// The email address comes from the participant's `mailto:` URL, if any.
+        /// The participant's status, role, and type aren't preserved.
+        public init(_ participant: EKParticipant) {
+            self.init(participantName: participant.name, url: participant.url)
+        }
+
+        init(participantName: String?, url: URL?) {
+            if let name = participantName, !name.isEmpty {
+                let person = Person(name: name)
+                self.givenName = person.givenName
+                self.familyName = person.familyName
+            }
+
+            if let url, url.scheme?.lowercased() == "mailto",
+                let address = URLComponents(url: url, resolvingAgainstBaseURL: false)?.path,
+                !address.isEmpty
+            {
+                self.email = [address]
+            }
+        }
+    }
+#endif
+
 extension Person: Codable {
     private enum CodingKeys: String, CodingKey {
         case givenName, familyName, email, telephone, address

@@ -24,6 +24,28 @@ public struct Event: Hashable, Sendable {
     /// URLs associated with the event
     public var url: URL?
 
+    /// Whether the event lasts all day.
+    ///
+    /// This property isn't part of Schema.org.
+    public var isAllDay: Bool?
+
+    /// Event status values based on Schema.org EventStatusType
+    public enum Status: String, Codable, Hashable, Sendable {
+        case scheduled = "EventScheduled"
+        case cancelled = "EventCancelled"
+        case postponed = "EventPostponed"
+        case rescheduled = "EventRescheduled"
+    }
+
+    /// Status of the event
+    public var eventStatus: Status?
+
+    /// The person who organizes the event
+    public var organizer: Person?
+
+    /// People who attend the event
+    public var attendee: [Person]?
+
     public init(
         name: String,
         dates: Range<Date>
@@ -56,6 +78,27 @@ public struct Event: Hashable, Sendable {
             self.endDate = DateTime(event.endDate, timeZone: event.timeZone)
             self.location = event.location
             self.url = event.url
+            self.isAllDay = event.isAllDay ? true : nil
+            self.eventStatus = Status(event.status)
+            self.organizer = event.organizer.map(Person.init)
+            if let attendees = event.attendees, !attendees.isEmpty {
+                self.attendee = attendees.map(Person.init)
+            }
+        }
+    }
+
+    extension Event.Status {
+        /// Initialize an event status with an EventKit event status.
+        ///
+        /// Returns `nil` for `EKEventStatus.none` and `EKEventStatus.tentative`,
+        /// because Schema.org has no matching `EventStatusType` member.
+        init?(_ status: EKEventStatus) {
+            switch status {
+            case .confirmed: self = .scheduled
+            case .canceled: self = .cancelled
+            case .none, .tentative: return nil
+            @unknown default: return nil
+            }
         }
     }
 #endif
@@ -63,6 +106,7 @@ public struct Event: Hashable, Sendable {
 extension Event: Codable {
     private enum CodingKeys: String, CodingKey {
         case name, description, startDate, endDate, location, url, calendar
+        case isAllDay, eventStatus, organizer, attendee
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -87,6 +131,10 @@ extension Event: Codable {
         try container.encodeIfPresent(endDate, forKey: .attribute(.endDate))
         try container.encodeIfPresent(location, forKey: .attribute(.location))
         try container.encodeIfPresent(url, forKey: .attribute(.url))
+        try container.encodeIfPresent(isAllDay, forKey: .attribute(.isAllDay))
+        try container.encodeIfPresent(eventStatus, forKey: .attribute(.eventStatus))
+        try container.encodeIfPresent(organizer, forKey: .attribute(.organizer))
+        try container.encodeIfPresent(attendee, forKey: .attribute(.attendee))
     }
 
     public init(from decoder: Decoder) throws {
@@ -114,5 +162,9 @@ extension Event: Codable {
         endDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.endDate))
         location = try container.decodeIfPresent(String.self, forKey: .attribute(.location))
         url = try container.decodeIfPresent(URL.self, forKey: .attribute(.url))
+        isAllDay = try container.decodeIfPresent(Bool.self, forKey: .attribute(.isAllDay))
+        eventStatus = try container.decodeIfPresent(Status.self, forKey: .attribute(.eventStatus))
+        organizer = try container.decodeIfPresent(Person.self, forKey: .attribute(.organizer))
+        attendee = try container.decodeIfPresent([Person].self, forKey: .attribute(.attendee))
     }
 }
