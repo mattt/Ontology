@@ -65,6 +65,48 @@ struct EventTests {
         #expect(minimalEvent.url == nil)
     }
 
+    @Test("Event initialization preserves notes as description")
+    func testNotesPreservation() throws {
+        let eventStore = EKEventStore()
+        let event = EKEvent(eventStore: eventStore)
+
+        event.title = "Test Event"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+        event.notes = "Bring the signed copy"
+
+        let ontologyEvent = Event(event)
+
+        #expect(ontologyEvent.description == "Bring the signed copy")
+
+        let withoutNotes = EKEvent(eventStore: eventStore)
+        withoutNotes.title = "Test Event"
+        withoutNotes.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        withoutNotes.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+
+        #expect(Event(withoutNotes).description == nil)
+    }
+
+    @Test("Event round-trip serialization preserves notes")
+    func testNotesRoundTrip() throws {
+        let eventStore = EKEventStore()
+        let event = EKEvent(eventStore: eventStore)
+
+        event.title = "Test Event"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+        event.notes = "Bring the signed copy"
+
+        let original = Event(event)
+        let encoded = try JSONEncoder().encode(original)
+
+        let json = try JSONSerialization.jsonObject(with: encoded) as! [String: Any]
+        #expect(json["description"] as? String == "Bring the signed copy")
+
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.description == original.description)
+    }
+
     @Test("Event JSON-LD encoding preserves all properties")
     func testJSONLDEncoding() throws {
         let eventStore = EKEventStore()
