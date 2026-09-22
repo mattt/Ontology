@@ -53,6 +53,7 @@ public struct PlanAction: Hashable, Sendable {
     extension PlanAction {
         /// Initialize a PlanAction with an EventKit reminder
         public init(_ reminder: EKReminder) {
+            self.identifier = reminder.calendarItemIdentifier
             self.name = reminder.title
             self.description = reminder.notes
             if let dueDate = reminder.dueDateComponents?.date {
