@@ -107,6 +107,123 @@ struct EventTests {
         #expect(decoded.description == original.description)
     }
 
+    @Test("Event initialization preserves all-day status")
+    func testAllDayPreservation() throws {
+        let eventStore = EKEventStore()
+        let event = EKEvent(eventStore: eventStore)
+
+        event.title = "Holiday"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 86400)
+        event.isAllDay = true
+
+        #expect(Event(event).isAllDay == true)
+
+        event.isAllDay = false
+
+        #expect(Event(event).isAllDay == nil)
+    }
+
+    @Test("Event status maps from EventKit event status")
+    func testEventStatusMapping() throws {
+        #expect(Event.Status(EKEventStatus.confirmed) == .scheduled)
+        #expect(Event.Status(EKEventStatus.canceled) == .cancelled)
+        #expect(Event.Status(EKEventStatus.tentative) == nil)
+        #expect(Event.Status(EKEventStatus.none) == nil)
+
+        let eventStore = EKEventStore()
+        let event = EKEvent(eventStore: eventStore)
+        event.title = "Test Event"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+
+        #expect(Event(event).eventStatus == nil)
+    }
+
+    @Test("Participant maps to Person with name and email")
+    func testParticipantMapping() throws {
+        let person = Person(
+            participantName: "Jane Appleseed",
+            url: URL(string: "mailto:jane@example.com")
+        )
+        #expect(person.givenName == "Jane")
+        #expect(person.familyName == "Appleseed")
+        #expect(person.email == ["jane@example.com"])
+
+        let unnamed = Person(
+            participantName: nil,
+            url: URL(string: "mailto:room@example.com")
+        )
+        #expect(unnamed.givenName == nil)
+        #expect(unnamed.familyName == nil)
+        #expect(unnamed.email == ["room@example.com"])
+
+        let withoutEmail = Person(
+            participantName: "",
+            url: URL(string: "urn:uuid:00000000-0000-0000-0000-000000000000")
+        )
+        #expect(withoutEmail.givenName == nil)
+        #expect(withoutEmail.email == nil)
+    }
+
+    @Test("Event without new properties omits their keys")
+    func testNewPropertiesOmittedWhenAbsent() throws {
+        let eventStore = EKEventStore()
+        let event = EKEvent(eventStore: eventStore)
+
+        event.title = "Test Event"
+        event.startDate = Date(timeIntervalSinceReferenceDate: 0)
+        event.endDate = Date(timeIntervalSinceReferenceDate: 3600)
+
+        let encoded = try JSONEncoder().encode(Event(event))
+        let json = try JSONSerialization.jsonObject(with: encoded) as! [String: Any]
+
+        #expect(json["isAllDay"] == nil)
+        #expect(json["eventStatus"] == nil)
+        #expect(json["organizer"] == nil)
+        #expect(json["attendee"] == nil)
+    }
+
+    @Test("Event round-trip serialization preserves status and participants")
+    func testStatusAndParticipantsRoundTrip() throws {
+        let start = Date(timeIntervalSinceReferenceDate: 0)
+        let end = Date(timeIntervalSinceReferenceDate: 3600)
+        var original = Event(name: "Planning", dates: start..<end)
+        original.isAllDay = true
+        original.eventStatus = .cancelled
+        original.organizer = Person(
+            participantName: "Jane Appleseed",
+            url: URL(string: "mailto:jane@example.com")
+        )
+        original.attendee = [
+            Person(
+                participantName: "John Appleseed",
+                url: URL(string: "mailto:john@example.com")
+            ),
+            Person(participantName: nil, url: URL(string: "mailto:room@example.com")),
+        ]
+
+        let encoded = try JSONEncoder().encode(original)
+        let json = try JSONSerialization.jsonObject(with: encoded) as! [String: Any]
+
+        #expect(json["isAllDay"] as? Bool == true)
+        #expect(json["eventStatus"] as? String == "EventCancelled")
+
+        let organizer = json["organizer"] as? [String: Any]
+        #expect(organizer?["@type"] as? String == "Person")
+        #expect(organizer?["@context"] == nil)
+        #expect(organizer?["email"] as? [String] == ["jane@example.com"])
+
+        let attendees = json["attendee"] as? [[String: Any]]
+        #expect(attendees?.count == 2)
+
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.isAllDay == original.isAllDay)
+        #expect(decoded.eventStatus == original.eventStatus)
+        #expect(decoded.organizer == original.organizer)
+        #expect(decoded.attendee == original.attendee)
+    }
+
     @Test("Event JSON-LD encoding preserves all properties")
     func testJSONLDEncoding() throws {
         let eventStore = EKEventStore()
