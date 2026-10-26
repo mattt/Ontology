@@ -173,6 +173,19 @@ struct WeatherForecastTests {
         #expect(decoded.pressure == original.pressure)
     }
 
+    @Test("Small precipitation chances survive a round trip")
+    func testSmallPercentageRoundTrip() throws {
+        var forecast = WeatherForecast(dateTime: Date(timeIntervalSince1970: 0))
+        forecast.precipitationChance = 1e-12
+        forecast.humidity = 0.57
+
+        let data = try JSONEncoder().encode(forecast)
+        let decoded = try JSONDecoder().decode(WeatherForecast.self, from: data)
+
+        #expect(decoded.precipitationChance == 1e-12)
+        #expect(decoded.humidity == 0.57)
+    }
+
     @Test("Optional properties handle nil correctly")
     func testOptionalProperties() throws {
         let date = Date()
@@ -217,18 +230,5 @@ struct WeatherForecastTests {
         #expect(decoded.cloudCover == nil)
         #expect(decoded.uvIndex == nil)
         #expect(decoded.pressure == nil)
-    }
-
-    @Test("Small precipitation chances survive a round trip")
-    func testSmallPercentageRoundTrip() throws {
-        var forecast = WeatherForecast(dateTime: Date(timeIntervalSince1970: 0))
-        forecast.precipitationChance = 1e-12
-        forecast.humidity = 0.57
-
-        let data = try JSONEncoder().encode(forecast)
-        let decoded = try JSONDecoder().decode(WeatherForecast.self, from: data)
-
-        #expect(decoded.precipitationChance == 1e-12)
-        #expect(decoded.humidity == 0.57)
     }
 }
