@@ -32,22 +32,59 @@ public enum JSONLDCodingKey<T: CodingKey>: CodingKey {
     public init?(intValue: Int) { nil }
 }
 
+/// Options for encoding values as JSON-LD.
+public enum JSONLD {
+    /// A user info key that omits `@type` from values below the root of the encoded document.
+    ///
+    /// By default, every encoded value includes its `@type`.
+    /// Set this key to `true` to include `@type` only on the root value,
+    /// which is the value that also includes `@context`.
+    /// Values in a top-level array aren't at the root,
+    /// so they omit `@type` too.
+    ///
+    /// Omitting nested types makes the output shorter,
+    /// which helps when the output goes into a language model's context.
+    /// But JSON-LD processors can't infer a node's type from the property that contains it,
+    /// so don't set this key for output that other software reads as linked data.
+    ///
+    /// Decoding accepts values with or without `@type`.
+    ///
+    /// Example usage:
+    /// ```
+    /// let encoder = JSONEncoder()
+    /// encoder.userInfo[JSONLD.omitsNestedTypesKey] = true
+    /// let encodedData = try encoder.encode(myPerson)
+    /// ```
+    public static let omitsNestedTypesKey = CodingUserInfoKey(
+        rawValue: "me.mattt.Ontology.JSONLDOmitsNestedTypes")!
+}
+
 extension KeyedEncodingContainer {
-    /// Encodes `@context` for the root value, and `@type`.
+    /// Encodes `@context` for the root value, and `@type` unless the encoder omits it.
+    ///
+    /// - SeeAlso: ``JSONLD/omitsNestedTypesKey``
     mutating func encodeJSONLDHeader<T>(type: String, for encoder: Encoder) throws
     where Key == JSONLDCodingKey<T> {
-        if encoder.codingPath.isEmpty {
+        let isRoot = encoder.codingPath.isEmpty
+        if isRoot {
             try encode(schema.org, forKey: .context)
         }
-        try encode(type, forKey: .type)
+        if isRoot || encoder.userInfo[JSONLD.omitsNestedTypesKey] as? Bool != true {
+            try encode(type, forKey: .type)
+        }
     }
 }
 
 extension KeyedDecodingContainer {
-    /// Checks that `@type` matches the expected type.
+    /// Checks that `@type`, if present, matches the expected type.
+    ///
+    /// A missing `@type` is accepted,
+    /// because encoders can omit it from nested values.
+    ///
+    /// - SeeAlso: ``JSONLD/omitsNestedTypesKey``
     func verifyJSONLDType<T>(_ expectedType: String) throws
     where Key == JSONLDCodingKey<T> {
-        let decodedType = try decode(String.self, forKey: .type)
+        guard let decodedType = try decodeIfPresent(String.self, forKey: .type) else { return }
         guard decodedType == expectedType else {
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
