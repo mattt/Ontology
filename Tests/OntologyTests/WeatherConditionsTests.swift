@@ -53,7 +53,8 @@ struct WeatherConditionsTests {
         if let temperature = json["temperature"] as? [String: Any] {
             #expect(temperature["@type"] as? String == "QuantitativeValue")
             #expect(temperature["value"] as? Double == 20.0)
-            #expect(temperature["unitCode"] as? String == "CEL")
+            #expect(temperature["unitText"] as? String == "°C")
+            #expect(temperature["unitCode"] == nil)
         } else {
             Issue.record("Temperature encoding not found or incorrect")
         }
@@ -61,12 +62,14 @@ struct WeatherConditionsTests {
         // Check humidity encoding (should be encoded as percentage)
         let humidity = json["humidity"] as! [String: Any]
         #expect(humidity["value"] as? Double == 65.0)
-        #expect(humidity["unitCode"] as? String == "P1")
+        #expect(humidity["unitText"] as? String == "%")
+        #expect(humidity["unitCode"] == nil)
 
         // Check precipitation chance encoding
         let precipChance = json["precipitationChance"] as! [String: Any]
         #expect(precipChance["value"] as? Double == 30.0)
-        #expect(precipChance["unitCode"] as? String == "P1")
+        #expect(precipChance["unitText"] as? String == "%")
+        #expect(precipChance["unitCode"] == nil)
     }
 
     @Test("JSON-LD round-trip encoding/decoding works")

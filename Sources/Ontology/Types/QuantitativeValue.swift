@@ -31,6 +31,25 @@ public struct QuantitativeValue: Hashable, Sendable {
     }
 }
 
+extension QuantitativeValue {
+    /// The text for each UN/CEFACT Common Code that this library uses.
+    static let unitTexts: [String: String] = [
+        "MSK": "m/s²", "DEG": "°", "MTK": "m²", "KMQ": "kg/m³", "SEC": "s",
+        "AMP": "A", "VLT": "V", "JOU": "J", "HTZ": "Hz", "LUX": "lx",
+        "MTR": "m", "KGM": "kg", "WTT": "W", "KPA": "kPa", "MTS": "m/s",
+        "CEL": "°C", "MTQ": "m³", "P1": "%",
+    ]
+
+    /// The UN/CEFACT Common Code for each unit text that this library uses.
+    private static let unitCodes = Dictionary(
+        uniqueKeysWithValues: unitTexts.map { ($0.value, $0.key) })
+
+    /// Returns the unit code that a unit text implies, or an empty string if it implies none.
+    static func impliedUnitCode(for unitText: String?) -> String {
+        unitText.flatMap { unitCodes[$0] } ?? ""
+    }
+}
+
 extension QuantitativeValue: Codable {
     private enum CodingKeys: String, CodingKey {
         case value, unitCode, unitText
@@ -43,8 +62,14 @@ extension QuantitativeValue: Codable {
         try container.encodeJSONLDHeader(type: String(describing: Self.self), for: encoder)
 
         try container.encode(value, forKey: .attribute(.value))
-        try container.encode(unitCode, forKey: .attribute(.unitCode))
+
+        // Schema.org accepts either unitCode or unitText.
+        // Encode unitText, which a reader understands without a table of codes,
+        // and encode unitCode only when unitText doesn't imply it.
         try container.encodeIfPresent(unitText, forKey: .attribute(.unitText))
+        if unitCode != Self.impliedUnitCode(for: unitText) {
+            try container.encode(unitCode, forKey: .attribute(.unitCode))
+        }
     }
 
     public init(from decoder: Decoder) throws {
@@ -55,8 +80,10 @@ extension QuantitativeValue: Codable {
 
         // Decode properties
         value = try container.decode(Double.self, forKey: .attribute(.value))
-        unitCode = try container.decode(String.self, forKey: .attribute(.unitCode))
         unitText = try container.decodeIfPresent(String.self, forKey: .attribute(.unitText))
+        unitCode =
+            try container.decodeIfPresent(String.self, forKey: .attribute(.unitCode))
+            ?? Self.impliedUnitCode(for: unitText)
     }
 }
 
@@ -68,41 +95,48 @@ extension QuantitativeValue: Codable {
         private static func unCefactMapping<UnitType: Dimension>(for type: UnitType.Type) -> (
             code: String, text: String, baseUnit: UnitType
         )? {
+            guard let (code, baseUnit) = unCefactCode(for: type) else { return nil }
+            return (code, unitTexts[code]!, baseUnit)
+        }
+
+        private static func unCefactCode<UnitType: Dimension>(for type: UnitType.Type) -> (
+            code: String, baseUnit: UnitType
+        )? {
             switch type {
             case is UnitAcceleration.Type:
-                return ("MSK", "m/s²", UnitAcceleration.metersPerSecondSquared as! UnitType)
+                return ("MSK", UnitAcceleration.metersPerSecondSquared as! UnitType)
             case is UnitAngle.Type:
-                return ("DEG", "°", UnitAngle.degrees as! UnitType)
+                return ("DEG", UnitAngle.degrees as! UnitType)
             case is UnitArea.Type:
-                return ("MTK", "m²", UnitArea.squareMeters as! UnitType)
+                return ("MTK", UnitArea.squareMeters as! UnitType)
             case is UnitConcentrationMass.Type:
-                return ("KMQ", "kg/m³", UnitConcentrationMass.gramsPerLiter as! UnitType)
+                return ("KMQ", UnitConcentrationMass.gramsPerLiter as! UnitType)
             case is UnitDuration.Type:
-                return ("SEC", "s", UnitDuration.seconds as! UnitType)
+                return ("SEC", UnitDuration.seconds as! UnitType)
             case is UnitElectricCurrent.Type:
-                return ("AMP", "A", UnitElectricCurrent.amperes as! UnitType)
+                return ("AMP", UnitElectricCurrent.amperes as! UnitType)
             case is UnitElectricPotentialDifference.Type:
-                return ("VLT", "V", UnitElectricPotentialDifference.volts as! UnitType)
+                return ("VLT", UnitElectricPotentialDifference.volts as! UnitType)
             case is UnitEnergy.Type:
-                return ("JOU", "J", UnitEnergy.joules as! UnitType)
+                return ("JOU", UnitEnergy.joules as! UnitType)
             case is UnitFrequency.Type:
-                return ("HTZ", "Hz", UnitFrequency.hertz as! UnitType)
+                return ("HTZ", UnitFrequency.hertz as! UnitType)
             case is UnitIlluminance.Type:
-                return ("LUX", "lx", UnitIlluminance.lux as! UnitType)
+                return ("LUX", UnitIlluminance.lux as! UnitType)
             case is UnitLength.Type:
-                return ("MTR", "m", UnitLength.meters as! UnitType)
+                return ("MTR", UnitLength.meters as! UnitType)
             case is UnitMass.Type:
-                return ("KGM", "kg", UnitMass.kilograms as! UnitType)
+                return ("KGM", UnitMass.kilograms as! UnitType)
             case is UnitPower.Type:
-                return ("WTT", "W", UnitPower.watts as! UnitType)
+                return ("WTT", UnitPower.watts as! UnitType)
             case is UnitPressure.Type:
-                return ("KPA", "kPa", UnitPressure.kilopascals as! UnitType)
+                return ("KPA", UnitPressure.kilopascals as! UnitType)
             case is UnitSpeed.Type:
-                return ("MTS", "m/s", UnitSpeed.metersPerSecond as! UnitType)
+                return ("MTS", UnitSpeed.metersPerSecond as! UnitType)
             case is UnitTemperature.Type:
-                return ("CEL", "°C", UnitTemperature.celsius as! UnitType)
+                return ("CEL", UnitTemperature.celsius as! UnitType)
             case is UnitVolume.Type:
-                return ("MTQ", "m³", UnitVolume.cubicMeters as! UnitType)
+                return ("MTQ", UnitVolume.cubicMeters as! UnitType)
             default:
                 return nil
             }
