@@ -218,4 +218,26 @@ struct WeatherForecastTests {
         #expect(decoded.uvIndex == nil)
         #expect(decoded.pressure == nil)
     }
+
+    @Test("Attribution is encoded once, on the root value")
+    func testAttribution() throws {
+        let forecast = WeatherForecast(dateTime: Date(timeIntervalSince1970: 0))
+        let encoder = JSONEncoder()
+
+        let root = try JSONSerialization.jsonObject(with: encoder.encode(forecast)) as! [String: Any]
+        #expect(root["provider"] as? String == "Apple Weather")
+        #expect(root["attribution"] as? String == "Weather data provided by Apple Weather")
+        #expect(
+            root["attributionLink"] as? String
+                == "https://weatherkit.apple.com/legal-attribution.html")
+
+        let items =
+            try JSONSerialization.jsonObject(with: encoder.encode([forecast, forecast]))
+            as! [[String: Any]]
+        for item in items {
+            #expect(item["provider"] == nil)
+            #expect(item["attribution"] == nil)
+            #expect(item["attributionLink"] == nil)
+        }
+    }
 }

@@ -121,4 +121,27 @@ struct WeatherConditionsTests {
         let decoded = try decoder.decode(WeatherConditions.self, from: data)
         #expect(decoded.precipitationChance == nil)
     }
+
+    @Test("Attribution is encoded once, on the root value")
+    func testAttribution() throws {
+        let conditions = WeatherConditions(
+            dateTime: Date(timeIntervalSince1970: 0),
+            temperature: Measurement(value: 20, unit: UnitTemperature.celsius),
+            apparentTemperature: Measurement(value: 22, unit: UnitTemperature.celsius),
+            windSpeed: Measurement(value: 10, unit: UnitSpeed.kilometersPerHour),
+            humidity: 0.65,
+            condition: "Partly Cloudy",
+            precipitationChance: 0.3
+        )
+        let encoder = JSONEncoder()
+
+        let root = try JSONSerialization.jsonObject(with: encoder.encode(conditions)) as! [String: Any]
+        #expect(root["provider"] as? String == "Apple Weather")
+        #expect(root["attributionLink"] != nil)
+
+        let items =
+            try JSONSerialization.jsonObject(with: encoder.encode([conditions])) as! [[String: Any]]
+        #expect(items[0]["provider"] == nil)
+        #expect(items[0]["attributionLink"] == nil)
+    }
 }

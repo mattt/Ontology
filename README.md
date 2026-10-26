@@ -55,6 +55,12 @@ Additional types supporting [Apple WeatherKit][weatherkit]:
 | WeatherForecast | [DayWeather](https://developer.apple.com/documentation/weatherkit/dayweather), [HourWeather](https://developer.apple.com/documentation/weatherkit/hourweather), [MinuteWeather](https://developer.apple.com/documentation/weatherkit/minuteweather) | Detailed weather forecast including temperature, precipitation, wind, sun/moon data |
 | WeatherConditions | [CurrentWeather](https://developer.apple.com/documentation/weatherkit/currentweather), [HourWeather](https://developer.apple.com/documentation/weatherkit/hourweather) | Current or hourly weather conditions including temperature, wind, and humidity |
 
+A `WeatherForecast` or `WeatherConditions` value
+encoded as the root of a document includes the attribution that WeatherKit requires.
+A value encoded in another value, such as an array of forecasts, omits it,
+so that the attribution isn't repeated for each value.
+In that case, include the attribution once in the containing value.
+
 ## Usage
 
 ### Creating objects and encoding as JSON-LD
