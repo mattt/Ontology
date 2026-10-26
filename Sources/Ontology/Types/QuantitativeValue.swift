@@ -21,10 +21,13 @@ public struct QuantitativeValue: Hashable, Sendable {
 
     /// Create a percentage value from a double.
     ///
-    /// The value is from 0 (0% probability) to 1 (100% probability)
+    /// The value is from 0 (0% probability) to 1 (100% probability).
+    /// The result is rounded to nine decimal places
+    /// to remove floating-point error from the conversion,
+    /// so that `0.57` becomes `57` instead of `56.99999999999999`.
     public static func percentage(_ value: Double) -> QuantitativeValue {
         QuantitativeValue(
-            value: value * 100,
+            value: (value * 100 * 1e9).rounded() / 1e9,
             unitCode: "P1",  // UN/CEFACT code for percentage
             unitText: "%"
         )

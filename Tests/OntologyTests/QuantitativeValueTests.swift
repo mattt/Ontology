@@ -135,6 +135,14 @@ struct QuantitativeValueTests {
         #expect(percentage.unitText == "%")
     }
 
+    @Test(
+        "Percentage helper removes floating-point error",
+        arguments: [(0.57, 57.0), (0.29, 29.0), (0.07, 7.0), (0.123456, 12.3456), (1, 100)]
+    )
+    func testPercentageRounding(fraction: Double, expected: Double) {
+        #expect(QuantitativeValue.percentage(fraction).value == expected)
+    }
+
     @Test("Invalid unit conversion returns nil")
     func testInvalidUnitConversion() {
         // Create a value with an invalid unit code
