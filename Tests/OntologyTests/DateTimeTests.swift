@@ -51,7 +51,7 @@ struct DateTimeTests {
         #expect(json["@context"] as? String == "https://schema.org")
         #expect(json["@type"] as? String == "DateTime")
         let value = json["value"] as! String
-        #expect(value == "1969-12-31T16:00:00.000-08:00")
+        #expect(value == "1969-12-31T16:00:00-08:00")
     }
 
     @Test("DateTime string encoding preserves timezone")
@@ -64,21 +64,21 @@ struct DateTimeTests {
         let utcEncoded = try JSONEncoder().encode(utcDateTime)
         let utcString = String(data: utcEncoded, encoding: .utf8)!
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        #expect(utcString.contains("1970-01-01T00:00:00.000Z"))
+        #expect(utcString.contains("1970-01-01T00:00:00Z"))
 
         // Test Tokyo (+09:00)
         let tokyoDateTime = DateTime(date, timeZone: TimeZone(secondsFromGMT: 9 * 3600))
         let tokyoEncoded = try JSONEncoder().encode(tokyoDateTime)
         let tokyoString = String(data: tokyoEncoded, encoding: .utf8)!
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        #expect(tokyoString.contains("1970-01-01T09:00:00.000+09:00"))
+        #expect(tokyoString.contains("1970-01-01T09:00:00+09:00"))
 
         // Test Portland (-08:00)
         let pdxDateTime = DateTime(date, timeZone: TimeZone(secondsFromGMT: -8 * 3600))
         let pdxEncoded = try JSONEncoder().encode(pdxDateTime)
         let pdxString = String(data: pdxEncoded, encoding: .utf8)!
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        #expect(pdxString.contains("1969-12-31T16:00:00.000-08:00"))
+        #expect(pdxString.contains("1969-12-31T16:00:00-08:00"))
     }
 
     @Test("DateTime round-trip preserves timezone")
@@ -99,7 +99,7 @@ struct DateTimeTests {
         let reencoded = try encoder.encode(decoded)
         let finalString = String(data: reencoded, encoding: .utf8)!
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        #expect(finalString.contains("2025-01-01T00:00:00.000-08:00"))
+        #expect(finalString.contains("2025-01-01T00:00:00-08:00"))
     }
 
     @Test("DateTime encoding respects TimeZone from encoder's userInfo")
@@ -119,7 +119,7 @@ struct DateTimeTests {
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
 
         // Verify it used the TimeZone from userInfo, not the one from dateTime
-        #expect(jsonString.contains("1969-12-31T19:00:00.000-05:00"))
+        #expect(jsonString.contains("1969-12-31T19:00:00-05:00"))
 
         // Test with a JSON-LD encoding
         let jsonLDDateTime = DateTime(date)
@@ -128,7 +128,7 @@ struct DateTimeTests {
 
         // Verify the TimeZone from userInfo was used
         let value = json["value"] as! String
-        #expect(value.contains("1969-12-31T19:00:00.000-05:00"))
+        #expect(value.contains("1969-12-31T19:00:00-05:00"))
 
         // Verify userInfo TimeZone takes precedence over DateTime's TimeZone
         let tokyoDateTime = DateTime(date, timeZone: TimeZone(secondsFromGMT: 9 * 3600))
@@ -137,6 +137,31 @@ struct DateTimeTests {
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
 
         // Should still use New York time from userInfo, not Tokyo time
-        #expect(tokyoString.contains("1969-12-31T19:00:00.000-05:00"))
+        #expect(tokyoString.contains("1969-12-31T19:00:00-05:00"))
+    }
+
+    @Test("DateTime string initialization accepts timestamps without fractional seconds")
+    func testStringInitializationWithoutFractionalSeconds() throws {
+        let withFraction = try #require(DateTime(string: "2025-01-01T00:00:00.000-08:00"))
+        let withoutFraction = try #require(DateTime(string: "2025-01-01T00:00:00-08:00"))
+
+        #expect(withoutFraction.value == withFraction.value)
+        #expect(withoutFraction.timeZone?.secondsFromGMT() == -8 * 3600)
+    }
+
+    @Test("DateTime encoding includes fractional seconds only when they're not zero")
+    func testFractionalSecondsEncoding() throws {
+        let encoder = JSONEncoder()
+
+        let whole = DateTime(Date(timeIntervalSince1970: 0), timeZone: .gmt)
+        let wholeString = String(data: try encoder.encode([whole]), encoding: .utf8)!
+        #expect(wholeString == #"["1970-01-01T00:00:00Z"]"#)
+
+        let fractional = DateTime(Date(timeIntervalSince1970: 0.5), timeZone: .gmt)
+        let fractionalString = String(data: try encoder.encode([fractional]), encoding: .utf8)!
+        #expect(fractionalString == #"["1970-01-01T00:00:00.500Z"]"#)
+
+        let decoded = try JSONDecoder().decode([DateTime].self, from: encoder.encode([fractional]))
+        #expect(decoded.first?.value == fractional.value)
     }
 }
