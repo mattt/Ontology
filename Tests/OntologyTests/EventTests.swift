@@ -247,8 +247,8 @@ struct EventTests {
         #expect(json["name"] as? String == "NYE")
         #expect(json["location"] as? String == "1550 Broadway, New York, NY 10036")
         #expect(json["url"] as? String == "https://example.com")
-        #expect(json["startDate"] as? String == "2000-12-31T19:00:00.000-05:00")
-        #expect(json["endDate"] as? String == "2001-01-01T00:00:00.000-05:00")
+        #expect(json["startDate"] as? String == "2000-12-31T19:00:00-05:00")
+        #expect(json["endDate"] as? String == "2001-01-01T00:00:00-05:00")
     }
 
     @Test("Event round-trip serialization preserves data")

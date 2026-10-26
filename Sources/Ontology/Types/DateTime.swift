@@ -12,7 +12,13 @@ public struct DateTime: Hashable, Sendable {
     public init?(string: String) {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: string) else { return nil }
+        var date = formatter.date(from: string)
+        if date == nil {
+            // Accept timestamps without fractional seconds, too
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: string)
+        }
+        guard let date else { return nil }
         self.value = date
         self.timeZone = TimeZone(iso8601: string)
     }
@@ -76,7 +82,12 @@ extension DateTime: Codable {
 
     public func encode(to encoder: Encoder) throws {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.formatOptions = [.withInternetDateTime]
+
+        // Omit fractional seconds when they're zero, as they are for most calendar dates
+        if value.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1) != 0 {
+            formatter.formatOptions.insert(.withFractionalSeconds)
+        }
 
         // Check if a TimeZone was provided in userInfo
         if let userInfoTimeZone = encoder.userInfo[DateTime.timeZoneOverrideKey] as? TimeZone {
