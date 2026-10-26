@@ -25,8 +25,36 @@ struct QuantitativeValueTests {
         #expect(json["@context"] as? String == "https://schema.org")
         #expect(json["@type"] as? String == "QuantitativeValue")
         #expect(json["value"] as? Double == 20.5)
-        #expect(json["unitCode"] as? String == "MTS")
         #expect(json["unitText"] as? String == "m/s")
+        #expect(json["unitCode"] == nil)
+    }
+
+    @Test(
+        "JSON-LD encoding includes unitCode only when unitText doesn't imply it",
+        arguments: [
+            (QuantitativeValue(value: 1, unitCode: "MTS", unitText: "m/s"), nil, "m/s"),
+            (QuantitativeValue(value: 1, unitCode: "MTS"), "MTS", nil),
+            (QuantitativeValue(value: 1, unitCode: "", unitText: "mph"), nil, "mph"),
+            (QuantitativeValue(value: 1, unitCode: "HUR", unitText: "h"), "HUR", "h"),
+            (QuantitativeValue(value: 1, unitCode: "", unitText: "%"), "", "%"),
+        ] as [(QuantitativeValue, String?, String?)]
+    )
+    func testUnitEncoding(value: QuantitativeValue, unitCode: String?, unitText: String?) throws {
+        let data = try JSONEncoder().encode(value)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        #expect(json["unitCode"] as? String == unitCode)
+        #expect(json["unitText"] as? String == unitText)
+        #expect(try JSONDecoder().decode(QuantitativeValue.self, from: data) == value)
+    }
+
+    @Test("JSON-LD decoding accepts unitCode without unitText")
+    func testDecodingUnitCodeOnly() throws {
+        let data = Data(#"{"@type":"QuantitativeValue","value":20,"unitCode":"CEL"}"#.utf8)
+        let value = try JSONDecoder().decode(QuantitativeValue.self, from: data)
+
+        #expect(value.unitCode == "CEL")
+        #expect(value.unitText == nil)
     }
 
     @Test("Measurement conversion works for temperature")
