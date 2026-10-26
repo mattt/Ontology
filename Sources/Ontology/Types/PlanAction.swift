@@ -79,13 +79,8 @@ extension PlanAction: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        // Encode @context if we're at the root level
-        if encoder.codingPath.isEmpty {
-            try container.encode(schema.org, forKey: .context)
-        }
-
-        // Encode @type - using PlanAction from Schema.org
-        try container.encode(String(describing: Self.self), forKey: .type)
+        // Encode @context at the root, and @type
+        try container.encodeJSONLDHeader(type: String(describing: Self.self), for: encoder)
 
         // Encode @id
         try container.encodeIfPresent(identifier, forKey: .id)
@@ -104,15 +99,7 @@ extension PlanAction: Codable {
         let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
         // Verify type is correct
-        let describedType = String(describing: Self.self)
-        let decodedType = try container.decode(String.self, forKey: .type)
-        guard decodedType == describedType else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: container,
-                debugDescription: "Expected type to be '\(describedType)', but found \(decodedType)"
-            )
-        }
+        try container.verifyJSONLDType(String(describing: Self.self))
 
         // Decode @id
         identifier = try container.decodeIfPresent(String.self, forKey: .id)

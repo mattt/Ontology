@@ -40,11 +40,8 @@ extension ItemList: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        if encoder.codingPath.isEmpty {
-            try container.encode(schema.org, forKey: .context)
-        }
-
-        try container.encode("ItemList", forKey: .type)
+        // Encode @context at the root, and @type
+        try container.encodeJSONLDHeader(type: "ItemList", for: encoder)
         try container.encodeIfPresent(identifier, forKey: .id)
         try container.encodeIfPresent(name, forKey: .attribute(.name))
         try container.encodeIfPresent(url, forKey: .attribute(.url))
@@ -53,14 +50,8 @@ extension ItemList: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
-        let decodedType = try container.decode(String.self, forKey: .type)
-        guard decodedType == "ItemList" else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: container,
-                debugDescription: "Expected type to be 'ItemList', but found \(decodedType)"
-            )
-        }
+        // Verify type is correct
+        try container.verifyJSONLDType("ItemList")
 
         identifier = try container.decodeIfPresent(String.self, forKey: .id)
         name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
