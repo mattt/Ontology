@@ -1,6 +1,11 @@
 import Foundation
 
 /// A structured value representing a weather forecast.
+///
+/// When encoded as the root value, it includes the attribution that WeatherKit requires
+/// in `provider`, `attribution`, and `attributionLink` properties.
+/// When encoded in another value, such as an array,
+/// it omits the attribution, and the containing value must include it once.
 public struct WeatherForecast: Hashable, Sendable {
     /// The date and time of the forecast
     public var dateTime: Date
@@ -289,13 +294,17 @@ extension WeatherForecast: Codable {
         }
         try container.encodeIfPresent(pressureTrend, forKey: .attribute(.pressureTrend))
 
-        // Add required WeatherKit attribution
-        try container.encode("Apple Weather", forKey: .attribute(.provider))
-        try container.encode(
-            "Weather data provided by Apple Weather", forKey: .attribute(.attribution))
-        try container.encode(
-            "https://weatherkit.apple.com/legal-attribution.html",
-            forKey: .attribute(.attributionLink))
+        // Add required WeatherKit attribution to the root value.
+        // A value that contains weather values, such as a list of forecasts,
+        // includes the attribution once itself.
+        if encoder.codingPath.isEmpty {
+            try container.encode("Apple Weather", forKey: .attribute(.provider))
+            try container.encode(
+                "Weather data provided by Apple Weather", forKey: .attribute(.attribution))
+            try container.encode(
+                "https://weatherkit.apple.com/legal-attribution.html",
+                forKey: .attribute(.attributionLink))
+        }
     }
 
     public init(from decoder: Decoder) throws {
