@@ -142,6 +142,41 @@ So to recap, the date encoding priority is:
 2. `TimeZone` from the `DateTime` object (if specified)
 3. GMT/UTC (default fallback)
 
+### Omitting nested types
+
+By default, every encoded value includes its `@type`,
+including values nested in another value.
+To make the output shorter,
+such as when it goes into a language model's context,
+set `JSONLD.omitsNestedTypesKey` to `true`.
+The root value keeps its `@context` and `@type`:
+
+```swift
+var person = Person(name: "Jane Doe")
+person.worksFor = Organization(name: "Example Corp")
+
+let encoder = JSONEncoder()
+encoder.userInfo[JSONLD.omitsNestedTypesKey] = true
+let jsonData = try encoder.encode(person)
+
+// Output:
+// {
+//   "@context": "https://schema.org",
+//   "@type": "Person",
+//   "givenName": "Jane",
+//   "familyName": "Doe",
+//   "worksFor": {
+//     "name": "Example Corp"
+//   }
+// }
+```
+
+Values in a top-level array aren't at the root,
+so they omit `@type` too.
+JSON-LD processors can't infer the type of a nested value,
+so don't set this key for output that other software reads as linked data.
+Decoding accepts values with or without `@type`.
+
 ## License
 
 This project is available under the MIT license.

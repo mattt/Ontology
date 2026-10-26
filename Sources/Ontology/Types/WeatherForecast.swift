@@ -182,13 +182,9 @@ extension WeatherForecast: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        // Encode @context if we're at the root level
-        if encoder.codingPath.isEmpty {
-            try container.encode(schema.org, forKey: .context)
-        }
-
-        try container.encode(
-            "https://developer.apple.com/WeatherKit/#/WeatherForecast", forKey: .type)
+        // Encode @context at the root, and @type
+        try container.encodeJSONLDHeader(
+            type: "https://developer.apple.com/WeatherKit/#/WeatherForecast", for: encoder)
 
         // Basic info
         try container.encode(DateTime(dateTime), forKey: .attribute(.dateTime))
@@ -305,16 +301,9 @@ extension WeatherForecast: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        // Verify type
-        let expectedType = "https://developer.apple.com/WeatherKit/#/WeatherForecast"
-        let decodedType = try container.decode(String.self, forKey: .type)
-        guard decodedType == expectedType else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: container,
-                debugDescription: "Expected type to be '\(expectedType)', but found \(decodedType)"
-            )
-        }
+        // Verify type is correct
+        try container.verifyJSONLDType(
+            "https://developer.apple.com/WeatherKit/#/WeatherForecast")
 
         // Basic info
         dateTime = try container.decode(DateTime.self, forKey: .attribute(.dateTime)).value

@@ -35,13 +35,8 @@ extension GeoCoordinates: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: JSONLDCodingKey<CodingKeys>.self)
 
-        // Encode @context if we're at the root level
-        if encoder.codingPath.isEmpty {
-            try container.encode(schema.org, forKey: .context)
-        }
-
-        // Encode @type
-        try container.encode(String(describing: Self.self), forKey: .type)
+        // Encode @context at the root, and @type
+        try container.encodeJSONLDHeader(type: String(describing: Self.self), for: encoder)
 
         // Encode properties
         try container.encode(latitude, forKey: .attribute(.latitude))
