@@ -20,12 +20,16 @@ import Foundation
 /// so that no part of the rule is dropped.
 /// Both properties stay `nil` for a rule that Schema.org can express in full.
 ///
-/// The days of the week use the two forms that Schema.org allows for `byDay`.
+/// The days of the week use the forms that Schema.org allows for `byDay`.
 /// A plain day of the week is a Schema.org `DayOfWeek` value,
 /// such as `https://schema.org/Monday`.
-/// A day with an occurrence, such as the second Tuesday of the month,
-/// is text in the iCalendar form that Schema.org also allows,
-/// such as `2TU`.
+/// A monthly day with an occurrence, such as the second Tuesday of the month,
+/// uses `byMonthWeek` with the plain day,
+/// so the second Tuesday is `byDay` Tuesday with `byMonthWeek` 2.
+/// When `byMonthWeek` cannot express the occurrence,
+/// such as the last Friday of the month or an occurrence in a year,
+/// the day is text in the iCalendar form that Schema.org also allows,
+/// such as `-1FR`.
 /// Schema.org gives that example for the second Monday of a month,
 /// which it encodes as `2MO`.
 public struct Schedule: Hashable, Sendable {
@@ -41,7 +45,7 @@ public struct Schedule: Hashable, Sendable {
     ///
     /// Each value is a Schema.org `DayOfWeek` value,
     /// such as `https://schema.org/Monday`,
-    /// or text in iCalendar form, such as `2TU` for the second Tuesday.
+    /// or text in iCalendar form, such as `-1FR` for the last Friday.
     public var byDay: [String]?
 
     /// The months of the year on which the event takes place, from 1 to 12.
@@ -51,6 +55,12 @@ public struct Schedule: Hashable, Sendable {
 
     /// The days of the month on which the event takes place, from 1 to 31.
     public var byMonthDay: [Int]?
+
+    /// The weeks of the month on which the event takes place, from 1 to 5.
+    ///
+    /// Use this property with `byDay` for a day such as the second Tuesday
+    /// of the month, which is `byDay` Tuesday with a value of 2 here.
+    public var byMonthWeek: [Int]?
 
     /// The number of times the event takes place.
     public var repeatCount: Int?
@@ -88,9 +98,8 @@ public struct Schedule: Hashable, Sendable {
     /// The EventKit initializer sets this property only when the rule has
     /// a part that Schema.org cannot express,
     /// so that a reader can recover the full rule.
-    /// The value is encoded in the Schema.org `identifier` property,
-    /// which accepts text and represents an identifier for a thing.
-    /// The RFC 5545 form identifies the recurrence pattern.
+    /// The value is encoded in the Schema.org `disambiguatingDescription`
+    /// property, which accepts text and `Schedule` inherits from `Thing`.
     /// No Schema.org property holds a recurrence rule itself,
     /// so this property does not invent one.
     public var recurrenceRule: String?
@@ -101,6 +110,7 @@ public struct Schedule: Hashable, Sendable {
         byDay: [String]? = nil,
         byMonth: [Int]? = nil,
         byMonthDay: [Int]? = nil,
+        byMonthWeek: [Int]? = nil,
         repeatCount: Int? = nil,
         startDate: DateTime? = nil,
         endDate: DateTime? = nil,
@@ -114,6 +124,7 @@ public struct Schedule: Hashable, Sendable {
         self.byDay = byDay
         self.byMonth = byMonth
         self.byMonthDay = byMonthDay
+        self.byMonthWeek = byMonthWeek
         self.repeatCount = repeatCount
         self.startDate = startDate
         self.endDate = endDate
@@ -126,9 +137,9 @@ public struct Schedule: Hashable, Sendable {
 
 extension Schedule: Codable {
     private enum CodingKeys: String, CodingKey {
-        case repeatFrequency, byDay, byMonth, byMonthDay, repeatCount
+        case repeatFrequency, byDay, byMonth, byMonthDay, byMonthWeek, repeatCount
         case startDate, endDate, exceptDate, scheduleTimezone, description
-        case recurrenceRule = "identifier"
+        case recurrenceRule = "disambiguatingDescription"
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -145,6 +156,7 @@ extension Schedule: Codable {
         try container.encodeIfPresent(byDay, forKey: .attribute(.byDay))
         try container.encodeIfPresent(byMonth, forKey: .attribute(.byMonth))
         try container.encodeIfPresent(byMonthDay, forKey: .attribute(.byMonthDay))
+        try container.encodeIfPresent(byMonthWeek, forKey: .attribute(.byMonthWeek))
         try container.encodeIfPresent(repeatCount, forKey: .attribute(.repeatCount))
         try container.encodeIfPresent(startDate, forKey: .attribute(.startDate))
         try container.encodeIfPresent(endDate, forKey: .attribute(.endDate))
@@ -169,6 +181,7 @@ extension Schedule: Codable {
         byDay = try container.decodeIfPresent([String].self, forKey: .attribute(.byDay))
         byMonth = try container.decodeIfPresent([Int].self, forKey: .attribute(.byMonth))
         byMonthDay = try container.decodeIfPresent([Int].self, forKey: .attribute(.byMonthDay))
+        byMonthWeek = try container.decodeIfPresent([Int].self, forKey: .attribute(.byMonthWeek))
         repeatCount = try container.decodeIfPresent(Int.self, forKey: .attribute(.repeatCount))
         startDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.startDate))
         endDate = try container.decodeIfPresent(DateTime.self, forKey: .attribute(.endDate))
@@ -192,6 +205,8 @@ extension Schedule: Codable {
         /// in `repeatFrequency`.
         /// The days of the week, months of the year, and days of the month
         /// become `byDay`, `byMonth`, and `byMonthDay`.
+        /// A monthly day with an occurrence becomes `byDay` with
+        /// `byMonthWeek` when that pair expresses the rule.
         /// A recurrence end becomes `repeatCount` or `endDate`.
         ///
         /// Set positions, days of the year, and weeks of the year
@@ -212,7 +227,9 @@ extension Schedule: Codable {
         ) {
             self.repeatFrequency = Self.repeatFrequency(
                 frequency: rule.frequency, interval: rule.interval)
-            self.byDay = Self.byDay(rule.daysOfTheWeek)
+            let dayFields = Self.byDayFields(rule.daysOfTheWeek, frequency: rule.frequency)
+            self.byDay = dayFields.byDay
+            self.byMonthWeek = dayFields.byMonthWeek
             self.byMonth = Self.nonEmpty(rule.monthsOfTheYear?.map(\.intValue))
             let monthDays = rule.daysOfTheMonth?.map(\.intValue)
             self.byMonthDay = Self.nonEmpty(monthDays?.filter { (1...31).contains($0) })
@@ -247,19 +264,70 @@ extension Schedule: Codable {
             }
         }
 
-        /// The `byDay` values for the days of the week of a rule.
+        /// The `byDay` and `byMonthWeek` values for the days of the week
+        /// of a rule.
+        ///
+        /// A plain day becomes a Schema.org `DayOfWeek` value.
+        /// A monthly day with an occurrence becomes the plain day with
+        /// a `byMonthWeek` value when that pair expresses the rule,
+        /// which it does when the days and weeks form a full set,
+        /// such as the second Tuesday or the first and third Mondays.
+        /// Any other day with an occurrence becomes iCalendar text,
+        /// such as `-1FR` for the last Friday.
+        static func byDayFields(
+            _ days: [EKRecurrenceDayOfWeek]?, frequency: EKRecurrenceFrequency
+        ) -> (byDay: [String]?, byMonthWeek: [Int]?) {
+            guard let days, !days.isEmpty else { return (nil, nil) }
+            if days.allSatisfy({ $0.weekNumber == 0 }) {
+                return (days.map(Self.byDayValue), nil)
+            }
+            if frequency == .monthly, let decomposed = Self.byMonthWeekFields(days) {
+                return decomposed
+            }
+            return (days.map(Self.byDayValue), nil)
+        }
+
+        /// The decomposed `byDay` and `byMonthWeek` values for monthly
+        /// days with occurrences, or `nil` when the pair cannot express
+        /// the days.
+        ///
+        /// Schema.org gives `byMonthWeek` values from 1 to 5,
+        /// so a negative occurrence such as the last Friday stays
+        /// in iCalendar text.
+        /// A set such as the second Tuesday and the third Friday also
+        /// stays in text, because the pair of lists would express
+        /// the second and third Tuesdays and Fridays.
+        static func byMonthWeekFields(
+            _ days: [EKRecurrenceDayOfWeek]
+        ) -> (byDay: [String], byMonthWeek: [Int])? {
+            let weeks = Self.distinct(days.map(\.weekNumber))
+            guard weeks.allSatisfy({ (1...5).contains($0) }) else { return nil }
+            let weekdayValues = Self.distinct(days.map { $0.dayOfTheWeek.rawValue })
+            let pairs = Set(days.map { "\($0.weekNumber):\($0.dayOfTheWeek.rawValue)" })
+            guard pairs.count == weeks.count * weekdayValues.count else { return nil }
+            let byDay = weekdayValues.compactMap { EKWeekday(rawValue: $0) }.map {
+                "https://schema.org/\(Self.weekdayName($0))"
+            }
+            guard byDay.count == weekdayValues.count else { return nil }
+            return (byDay, weeks)
+        }
+
+        /// The `byDay` value for one day of the week.
         ///
         /// A plain day becomes a Schema.org `DayOfWeek` value.
         /// A day with an occurrence becomes iCalendar text,
-        /// such as `2TU` for the second Tuesday.
-        static func byDay(_ days: [EKRecurrenceDayOfWeek]?) -> [String]? {
-            guard let days, !days.isEmpty else { return nil }
-            return days.map { day in
-                guard day.weekNumber != 0 else {
-                    return "https://schema.org/\(Self.weekdayName(day.dayOfTheWeek))"
-                }
-                return "\(day.weekNumber)\(Self.weekdayCode(day.dayOfTheWeek))"
+        /// such as `-1FR` for the last Friday.
+        static func byDayValue(_ day: EKRecurrenceDayOfWeek) -> String {
+            guard day.weekNumber != 0 else {
+                return "https://schema.org/\(Self.weekdayName(day.dayOfTheWeek))"
             }
+            return "\(day.weekNumber)\(Self.weekdayCode(day.dayOfTheWeek))"
+        }
+
+        /// The values without repeats, in the order of first appearance.
+        static func distinct(_ values: [Int]) -> [Int] {
+            var seen: Set<Int> = []
+            return values.filter { seen.insert($0).inserted }
         }
 
         /// Whether a rule has a part that Schema.org cannot express.

@@ -77,19 +77,70 @@ struct ScheduleTests {
         #expect(schedule.recurrenceRule == nil)
     }
 
-    @Test("Monthly rule on the second Tuesday uses iCalendar byDay text")
+    @Test("Monthly rule on the second Tuesday uses byDay with byMonthWeek")
     func testMonthlySecondTuesday() {
         let schedule = Schedule(
             rule(frequency: .monthly, daysOfTheWeek: [day(.tuesday, weekNumber: 2)]))
 
         #expect(schedule.repeatFrequency == "P1M")
-        #expect(schedule.byDay == ["2TU"])
+        #expect(schedule.byDay == ["https://schema.org/Tuesday"])
+        #expect(schedule.byMonthWeek == [2])
         #expect(schedule.description == nil)
         #expect(schedule.recurrenceRule == nil)
         #expect(
             Schedule.englishDescription(
                 for: rule(frequency: .monthly, daysOfTheWeek: [day(.tuesday, weekNumber: 2)]))
                 == "Monthly on the second Tuesday")
+    }
+
+    @Test("Monthly rule on the first and third Mondays uses byMonthWeek")
+    func testMonthlyFirstAndThirdMondays() {
+        let schedule = Schedule(
+            rule(
+                frequency: .monthly,
+                daysOfTheWeek: [day(.monday, weekNumber: 1), day(.monday, weekNumber: 3)]))
+
+        #expect(schedule.byDay == ["https://schema.org/Monday"])
+        #expect(schedule.byMonthWeek == [1, 3])
+        #expect(schedule.description == nil)
+        #expect(schedule.recurrenceRule == nil)
+    }
+
+    @Test("Monthly rules that byMonthWeek cannot express use iCalendar byDay text")
+    func testMonthlyByDayTextFallback() {
+        let mixed = Schedule(
+            rule(
+                frequency: .monthly,
+                daysOfTheWeek: [day(.tuesday, weekNumber: 2), day(.friday, weekNumber: 3)]))
+        #expect(mixed.byDay == ["2TU", "3FR"])
+        #expect(mixed.byMonthWeek == nil)
+        #expect(mixed.description == nil)
+        #expect(mixed.recurrenceRule == nil)
+
+        let lastFriday = Schedule(
+            rule(frequency: .monthly, daysOfTheWeek: [day(.friday, weekNumber: -1)]))
+        #expect(lastFriday.byDay == ["-1FR"])
+        #expect(lastFriday.byMonthWeek == nil)
+        #expect(lastFriday.description == nil)
+        #expect(lastFriday.recurrenceRule == nil)
+    }
+
+    @Test("Schedule encodes byMonthWeek and round-trips")
+    func testByMonthWeekEncoding() throws {
+        let original = Schedule(
+            repeatFrequency: "P1M",
+            byDay: ["https://schema.org/Tuesday"],
+            byMonthWeek: [2]
+        )
+
+        let data = try JSONEncoder().encode(original)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        #expect(json["byMonthWeek"] as? [Int] == [2])
+        #expect(json["byDay"] as? [String] == ["https://schema.org/Tuesday"])
+
+        let decoded = try JSONDecoder().decode(Schedule.self, from: data)
+        #expect(decoded == original)
     }
 
     @Test("Yearly rule becomes a yearly schedule with byMonth")
@@ -225,7 +276,10 @@ struct ScheduleTests {
 
         let data = try JSONEncoder().encode(schedule)
         let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        #expect(json["identifier"] as? String == "FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1")
+        #expect(
+            json["disambiguatingDescription"] as? String
+                == "FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1")
+        #expect(json["identifier"] == nil)
         #expect(
             json["description"] as? String
                 == "Monthly on weekdays limited to the last occurrence")
