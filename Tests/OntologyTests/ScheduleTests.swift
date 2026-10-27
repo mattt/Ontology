@@ -329,4 +329,24 @@ struct ScheduleTests {
             end: EKRecurrenceEnd(end: Date(timeIntervalSinceReferenceDate: 0)))
         #expect(Schedule.recurrenceRuleString(for: until) == "FREQ=DAILY;UNTIL=20010101T000000Z")
     }
+
+    @Test("English end date keeps its UTC time and seconds")
+    func testEnglishEndDateTime() {
+        // Midnight in America/Los_Angeles is 08:00 UTC.
+        // The time must stay in the text, with its zone.
+        let morning = Date(timeIntervalSince1970: 1_767_254_400)
+        #expect(Schedule.dateText(morning) == "January 1, 2026 at 8:00 AM UTC")
+        #expect(
+            Schedule.englishDescription(
+                for: rule(frequency: .daily, end: EKRecurrenceEnd(end: morning)))
+                == "Daily, until January 1, 2026 at 8:00 AM UTC")
+
+        // Midnight UTC has no time to keep.
+        let midnight = Date(timeIntervalSinceReferenceDate: 0)
+        #expect(Schedule.dateText(midnight) == "January 1, 2001")
+
+        // A time with seconds keeps the seconds.
+        let withSeconds = Date(timeIntervalSince1970: 1_767_254_430)
+        #expect(Schedule.dateText(withSeconds) == "January 1, 2026 at 8:00:30 AM UTC")
+    }
 }

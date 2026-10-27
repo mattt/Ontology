@@ -479,6 +479,11 @@ extension Schedule: Codable {
                 }
                 clauses.append("limited to \(Self.list(items))")
             }
+            if rule.firstDayOfTheWeek != 0, rule.firstDayOfTheWeek != 2,
+                let weekStart = EKWeekday(rawValue: rule.firstDayOfTheWeek)
+            {
+                clauses.append("with the week starting on \(Self.weekdayName(weekStart))")
+            }
             var result = clauses.joined(separator: " ")
             if let end = rule.recurrenceEnd {
                 if end.occurrenceCount > 0 {
@@ -608,18 +613,26 @@ extension Schedule: Codable {
 
         /// A full date in English, such as "January 1, 2026".
         ///
-        /// The text includes the time when the date is not at midnight UTC.
+        /// The text includes the time, with its UTC zone and any seconds,
+        /// when the date is not at midnight UTC.
         static func dateText(_ date: Date) -> String {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(secondsFromGMT: 0)!
             let formatter = DateFormatter()
-            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.calendar = calendar
             formatter.locale = Locale(identifier: "en_US")
             formatter.timeZone = TimeZone(secondsFromGMT: 0)
-            let components = formatter.calendar.dateComponents(
-                [.hour, .minute, .second], from: date)
-            let isMidnight =
-                (components.hour ?? 0) == 0 && (components.minute ?? 0) == 0
-                && (components.second ?? 0) == 0
-            formatter.dateFormat = isMidnight ? "MMMM d, yyyy" : "MMMM d, yyyy 'at' h:mm a"
+            let components = calendar.dateComponents([.hour, .minute, .second], from: date)
+            let hour = components.hour ?? 0
+            let minute = components.minute ?? 0
+            let second = components.second ?? 0
+            if hour == 0, minute == 0, second == 0 {
+                formatter.dateFormat = "MMMM d, yyyy"
+            } else if second == 0 {
+                formatter.dateFormat = "MMMM d, yyyy 'at' h:mm a 'UTC'"
+            } else {
+                formatter.dateFormat = "MMMM d, yyyy 'at' h:mm:ss a 'UTC'"
+            }
             return formatter.string(from: date)
         }
 
