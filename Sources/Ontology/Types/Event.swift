@@ -46,6 +46,11 @@ public struct Event: Hashable, Sendable {
     /// People who attend the event
     public var attendee: [Person]?
 
+    /// The schedule or schedules for a repeating event.
+    ///
+    /// An event with several recurrence rules gets one schedule for each rule.
+    public var eventSchedule: [Schedule]?
+
     public init(
         name: String,
         dates: Range<Date>
@@ -84,6 +89,11 @@ public struct Event: Hashable, Sendable {
             if let attendees = event.attendees, !attendees.isEmpty {
                 self.attendee = attendees.map(Person.init)
             }
+            if let rules = event.recurrenceRules, !rules.isEmpty {
+                self.eventSchedule = rules.map {
+                    Schedule($0, startDate: event.startDate, timeZone: event.timeZone)
+                }
+            }
         }
     }
 
@@ -106,7 +116,7 @@ public struct Event: Hashable, Sendable {
 extension Event: Codable {
     private enum CodingKeys: String, CodingKey {
         case name, description, startDate, endDate, location, url, calendar
-        case isAllDay, eventStatus, organizer, attendee
+        case isAllDay, eventStatus, organizer, attendee, eventSchedule
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -130,6 +140,7 @@ extension Event: Codable {
         try container.encodeIfPresent(eventStatus, forKey: .attribute(.eventStatus))
         try container.encodeIfPresent(organizer, forKey: .attribute(.organizer))
         try container.encodeIfPresent(attendee, forKey: .attribute(.attendee))
+        try container.encodeIfPresent(eventSchedule, forKey: .attribute(.eventSchedule))
     }
 
     public init(from decoder: Decoder) throws {
@@ -153,5 +164,7 @@ extension Event: Codable {
         eventStatus = try container.decodeIfPresent(Status.self, forKey: .attribute(.eventStatus))
         organizer = try container.decodeIfPresent(Person.self, forKey: .attribute(.organizer))
         attendee = try container.decodeIfPresent([Person].self, forKey: .attribute(.attendee))
+        eventSchedule = try container.decodeIfPresent(
+            [Schedule].self, forKey: .attribute(.eventSchedule))
     }
 }
